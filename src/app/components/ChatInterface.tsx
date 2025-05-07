@@ -7,6 +7,7 @@ import { createWorker } from 'tesseract.js';
 import { useAuth } from "@/hooks/useAuth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { User } from "firebase/auth";
 
 // Typy języków do rozpoznawania tekstu
 type LanguageOption = {
@@ -140,6 +141,8 @@ export function ChatInterface() {
   const [isSharing, setIsSharing] = useState(false);
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const [userName, setUserName] = useState<string>("");
+  const [showWelcome, setShowWelcome] = useState<boolean>(true);
 
   // Get Google API credentials from environment variables
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
@@ -149,9 +152,50 @@ export function ChatInterface() {
     // If not authenticated and not loading, redirect to login
     if (!loading && !isAuthenticated) {
       router.push("/login");
+    } else if (!loading && isAuthenticated) {
+      // Get user's name when authenticated
+      const user = auth.currentUser;
+      if (user) {
+        getUserName(user);
+      }
     }
   }, [isAuthenticated, loading, router]);
+  
+  // Function to get user's name from Firebase
+  const getUserName = (user: User) => {
+    const displayName = user.displayName;
+    const email = user.email;
+    if (displayName) {
+      // Use first name if available
+      setUserName(displayName.split(' ')[0]);
+    } else if (email) {
+      // Use email username if no display name
+      setUserName(email.split('@')[0]);
+    } else {
+      setUserName("użytkowniku");
+    }
+  };
 
+  // Handle example prompt click
+  const handlePromptClick = (promptText: string) => {
+    setMessage(promptText);
+    setShowWelcome(false);
+    // Focus on input field after selecting a prompt
+    setTimeout(() => {
+      const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (inputElement) {
+        inputElement.focus();
+      }
+    }, 100);
+  };
+
+  // Hide welcome section on first message
+  useEffect(() => {
+    if (messages.length > 0) {
+      setShowWelcome(false);
+    }
+  }, [messages]);
+  
   // Refresh Firebase token periodically
   useEffect(() => {
     const refreshToken = async () => {
@@ -246,8 +290,59 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full lg:max-w-6xl mx-auto p-2 sm:p-4 text-gray-100">
-      <div className="flex-1 overflow-y-auto mb-2 sm:mb-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+    <div className="flex flex-col h-full w-full max-w-none p-2 sm:p-4 text-gray-100 relative">
+      {/* Improved background with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-indigo-900/20 to-purple-900/30 pointer-events-none z-0" />
+      <div className="flex-1 overflow-y-auto mb-2 sm:mb-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 relative z-10">
+        {/* Welcome section with user name and example prompts */}
+        {showWelcome && messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-2 sm:p-6 rounded-lg">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-px rounded-xl w-full max-w-2xl">
+              <div className="bg-gray-900/90 backdrop-blur-sm rounded-xl p-4 md:p-8 space-y-4 md:space-y-6">
+                <h2 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-300">
+                  Witaj, w czym mogę Ci pomóc {userName}?
+                </h2>
+                <p className="text-gray-300 mb-2 sm:mb-4 text-sm sm:text-base">Wybierz jeden z przykładowych promptów lub napisz własne zapytanie:</p>
+                
+                <div className="overflow-y-auto max-h-[50vh] px-1 pb-1 -mx-1 snap-y">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 snap-mandatory">
+                    <button 
+                      onClick={() => handlePromptClick("Zaplanuj moją najbliższą podróż do Włoch.")} 
+                      className="bg-blue-800/40 hover:bg-blue-700/50 text-left p-2.5 sm:p-3 rounded-lg border border-blue-700/50 transition-all duration-200 hover:shadow-md hover:border-blue-500/60 snap-start flex flex-col active:scale-[0.98]"
+                    >
+                      <span className="block font-medium mb-0.5 sm:mb-1 text-sm sm:text-base">Zaplanuj moją podróż</span>
+                      <span className="text-xs sm:text-sm text-gray-300">Zaplanuj moją najbliższą podróż do Włoch.</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handlePromptClick("Napisz mi tygodniowy plan treningowy na siłownię.")} 
+                      className="bg-blue-800/40 hover:bg-blue-700/50 text-left p-2.5 sm:p-3 rounded-lg border border-blue-700/50 transition-all duration-200 hover:shadow-md hover:border-blue-500/60 snap-start flex flex-col active:scale-[0.98]"
+                    >
+                      <span className="block font-medium mb-0.5 sm:mb-1 text-sm sm:text-base">Plan treningowy</span>
+                      <span className="text-xs sm:text-sm text-gray-300">Napisz mi tygodniowy plan treningowy na siłownię.</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handlePromptClick("Podaj mi przepis na szybki i zdrowy obiad.")} 
+                      className="bg-blue-800/40 hover:bg-blue-700/50 text-left p-2.5 sm:p-3 rounded-lg border border-blue-700/50 transition-all duration-200 hover:shadow-md hover:border-blue-500/60 snap-start flex flex-col active:scale-[0.98]"
+                    >
+                      <span className="block font-medium mb-0.5 sm:mb-1 text-sm sm:text-base">Przepis kulinarny</span>
+                      <span className="text-xs sm:text-sm text-gray-300">Podaj mi przepis na szybki i zdrowy obiad.</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handlePromptClick("Jak mogę zorganizować swój czas, aby być bardziej produktywnym?")} 
+                      className="bg-blue-800/40 hover:bg-blue-700/50 text-left p-2.5 sm:p-3 rounded-lg border border-blue-700/50 transition-all duration-200 hover:shadow-md hover:border-blue-500/60 snap-start flex flex-col active:scale-[0.98]"
+                    >
+                      <span className="block font-medium mb-0.5 sm:mb-1 text-sm sm:text-base">Porada produktywności</span>
+                      <span className="text-xs sm:text-sm text-gray-300">Jak mogę zorganizować swój czas, aby być bardziej produktywnym?</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {messages
           .filter((msg) => msg.role !== "tool")
           .map((msg, index) => (
@@ -257,7 +352,7 @@ export function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 relative z-10">
         
 {showCamera && (
   <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/80 p-2 sm:relative sm:bg-transparent sm:p-0">
@@ -364,7 +459,7 @@ export function ChatInterface() {
     type="text"
     value={message}
     onChange={(e) => setMessage(e.target.value)}
-    placeholder="Type your message..."
+    placeholder="Wpisz swoją wiadomość..."
     className="flex-1 p-2 sm:p-3 text-sm sm:text-base bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
   />
   {/* Przycisk toggle aparat - stylistyka jak Send, tylko czerwony */}
