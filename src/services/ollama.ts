@@ -2,7 +2,7 @@ import { getTools } from "@/ollama/toolsLoader";
 import { Ollama, Message } from "ollama";
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3:14b";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "deepseek-r1:14b";
 const TOOLS_RECURSION_LIMIT = 10;
 const SYSTEM_PROMPT = `
   You are a helpful AI assistant.
