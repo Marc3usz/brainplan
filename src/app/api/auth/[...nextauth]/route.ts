@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs';
 import { auth } from '@/lib/firebase';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 
-// Add id property to the Session User type
+
 interface ExtendedUser extends NextAuthUser {
   id?: string;
 }
