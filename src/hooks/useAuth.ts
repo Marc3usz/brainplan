@@ -2,9 +2,22 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-export function useAuth({ required = false, redirectTo = '/login' } = {}) {
+// Interfejs dla opcji hook'a
+interface UseAuthOptions {
+  required?: boolean;
+  redirectTo?: string;
+}
+
+// Typ zwracany przez hook
+interface UseAuthReturn {
+  user: any;
+  isAuthenticated: boolean;
+  loading: boolean;
+}
+
+export function useAuth({ required = false, redirectTo = '/login' }: UseAuthOptions = {}): UseAuthReturn {
   const { data: session, status } = useSession();
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +35,7 @@ export function useAuth({ required = false, redirectTo = '/login' } = {}) {
       localStorage.removeItem('firebaseUser');
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user: any) => {
       setFirebaseUser(user);
       setLoading(false);
     });

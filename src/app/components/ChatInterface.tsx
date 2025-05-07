@@ -3,9 +3,31 @@
 import { useState, useEffect, useRef } from "react";
 import { useChat } from "@/hooks/useChat";
 import { Message } from "./Message";
+import { createWorker } from 'tesseract.js';
 import { useAuth } from "@/hooks/useAuth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+
+// Typy języków do rozpoznawania tekstu
+type LanguageOption = {
+  code: string;
+  name: string;
+};
+
+// Dostępne języki do rozpoznawania tekstu
+const languageOptions: LanguageOption[] = [
+  { code: 'pol+eng', name: 'Polski + Angielski' },
+  { code: 'eng', name: 'Angielski' },
+  { code: 'pol', name: 'Polski' },
+  { code: 'deu', name: 'Niemiecki' },
+  { code: 'fra', name: 'Francuski' },
+  { code: 'spa', name: 'Hiszpański' },
+  { code: 'ita', name: 'Włoski' },
+  { code: 'rus', name: 'Rosyjski' },
+  { code: 'ukr', name: 'Ukraiński' },
+  { code: 'jpn', name: 'Japoński' },
+  { code: 'chi_sim', name: 'Chiński uproszczony' },
+];
 
 export function ChatInterface() {
   const [showCamera, setShowCamera] = useState(false);
