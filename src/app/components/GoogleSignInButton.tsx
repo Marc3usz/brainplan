@@ -51,7 +51,7 @@ export default function GoogleSignInButton({ redirectUrl }: GoogleSignInButtonPr
       <button
         onClick={handleGoogleSignIn}
         disabled={loading}
-        className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-70"
+        className="flex w-full items-center justify-center gap-2 sm:gap-3 rounded-md bg-white px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-70"
       >
         {loading ? (
           <Loader size="sm" className="mr-2" />

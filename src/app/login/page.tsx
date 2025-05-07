@@ -36,17 +36,17 @@ export default function LoginPage() {
     <>
       <Header />
       <main className="min-h-screen bg-white dark:bg-gray-900">
-        <div className="max-w-lg mx-auto px-4 py-20 sm:px-6 lg:px-8">
+        <div className="max-w-lg mx-auto px-3 sm:px-4 py-10 sm:py-20 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
               Sign in to Brain Plan
             </h1>
-            <p className="mt-4 text-lg text-gray-500 dark:text-gray-400">
+            <p className="mt-3 sm:mt-4 text-base sm:text-lg text-gray-500 dark:text-gray-400">
               Access your AI chat and personalized experience
             </p>
           
-            <div className="mt-8 space-y-4">
-              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <div className="mt-6 sm:mt-8 space-y-4">
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
                 <div className="space-y-6">
                   <GoogleSignInButton redirectUrl={callbackUrl} />
                   

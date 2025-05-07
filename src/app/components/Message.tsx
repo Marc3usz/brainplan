@@ -22,11 +22,11 @@ export function Message({ role, content, isLoading }: MessageProps) {
 
   return (
     <div
-      className={`p-4 rounded-lg ${
+      className={`p-3 sm:p-4 rounded-lg ${
         isUser
           ? "bg-blue-600 ml-auto hover:bg-blue-700"
           : "bg-gray-800 hover:bg-gray-750"
-      } max-w-[80%] transition-colors duration-200`}
+      } max-w-[90%] sm:max-w-[80%] text-sm sm:text-base transition-colors duration-200`}
     >
       <p className="text-sm font-semibold mb-1 text-gray-300">
         {isUser ? "You" : "Assistant"}

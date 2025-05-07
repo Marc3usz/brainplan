@@ -66,39 +66,39 @@ export default function AuthStatus() {
   const profileImage = user?.image || user?.photoURL || null;
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2 sm:gap-4">
       {isLoading ? (
         <Loader size="sm" />
       ) : user ? (
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2">
             <ProfileImage 
               src={profileImage} 
               alt={displayName} 
-              size={32} 
+              size={28} 
             />
-            <span className="text-sm font-medium hidden sm:inline">
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline">
               {displayName}
             </span>
           </div>
           <button
             onClick={handleSignOut}
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-900 hover:bg-gray-200"
+            className="rounded-md bg-gray-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-gray-200"
           >
             Sign out
           </button>
         </div>
       ) : (
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           <Link
             href="/auth/signin"
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="rounded-md bg-indigo-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             Sign in
           </Link>
           <Link
             href="/auth/signup"
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-900 hover:bg-gray-200"
+            className="rounded-md bg-gray-100 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-gray-900 hover:bg-gray-200"
           >
             Sign up
           </Link>

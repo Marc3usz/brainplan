@@ -22,7 +22,7 @@ export function ProtectedChat() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-900">
+      <div className="flex justify-center items-center h-full">
         <div className="text-center">
           <Loader size="lg" color="white" />
           <p className="mt-4 text-white text-xl">Loading your chat...</p>
@@ -35,5 +35,9 @@ export function ProtectedChat() {
     return null; // Don't render anything while redirecting
   }
 
-  return <ChatInterface />;
+  return (
+    <div className="h-full">
+      <ChatInterface />
+    </div>
+  );
 } 
