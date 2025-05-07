@@ -25,22 +25,20 @@ export default function Dashboard() {
       fetchCalendars(token);
     }
     
-    // Funkcja sprawdzająca zmiany w sessionStorage
-    const handleStorageChange = () => {
-      const currentToken = sessionStorage.getItem("accessToken");
-      if (currentToken !== accessToken) {
-        console.log("Token dostępu został zaktualizowany");
-        setAccessToken(currentToken);
-        if (currentToken) {
-          fetchCalendars(currentToken);
+    // Handle storage changes for when token is updated
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "accessToken") {
+        setAccessToken(e.newValue);
+        if (e.newValue) {
+          fetchCalendars(e.newValue);
         }
       }
     };
     
-    // Sprawdzaj co 2 sekundy, czy token się zmienił
-    const intervalId = setInterval(handleStorageChange, 2000);
+    // Use standard event listener instead of polling
+    window.addEventListener('storage', handleStorageChange);
     
-    return () => clearInterval(intervalId);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const fetchCalendars = async (token: string) => {
@@ -105,10 +103,7 @@ export default function Dashboard() {
                   <p className="text-gray-500 dark:text-gray-400">{email}</p>
                 </div>
                 <div className="ml-auto">
-                  <GoogleCalendarAuth 
-                    onAuthSuccess={handleAuthSuccess}
-                    onAuthFailure={handleAuthFailure}
-                  />
+                  {/* Google Calendar login button moved to calendar section */}
                 </div>
               </div>
               <p className="mt-4 text-gray-600 dark:text-gray-300">
@@ -128,22 +123,20 @@ export default function Dashboard() {
                 <div id="calendar" className="sm:col-span-2">
                   {accessToken ? (
                     <>
-                      <div className={`p-2 mb-3 rounded text-sm ${accessToken.startsWith('ya29') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {accessToken.startsWith('ya29') 
-                          ? <>✅ Token OAuth2 znaleziony! Pierwsze 10 znaków: {accessToken.substring(0, 10)}...</>
-                          : <>⚠️ Znaleziony token nie jest tokenem OAuth2! Typ tokenu: ID Token (JWT)<br/>Pierwsze 10 znaków: {accessToken.substring(0, 10)}...<br/>Zaloguj się ponownie, aby uzyskać prawidłowy token OAuth2.</>
-                        }
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">Your Calendar</h3>
+                        <GoogleCalendarAuth 
+                          onAuthSuccess={handleAuthSuccess}
+                          onAuthFailure={handleAuthFailure}
+                        />
                       </div>
                       <Calendar accessToken={accessToken} />
                     </>
                   ) : (
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 flex flex-col items-center justify-center min-h-[300px]">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
                       <p className="text-gray-600 dark:text-gray-300 mb-4 text-center">
                         Connect your Google Calendar to view your schedule here.
                       </p>
-                      <div className="mb-4 bg-yellow-100 text-yellow-800 p-2 rounded">
-                        ⚠️ Nie znaleziono tokenu dostępu. Spróbuj zalogować się ponownie przez Google.
-                      </div>
                       <GoogleCalendarAuth 
                         onAuthSuccess={handleAuthSuccess}
                         onAuthFailure={handleAuthFailure}
@@ -172,79 +165,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Dodatkowe opcje kalendarza i ręcznego pobierania tokenu */}
-              <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200">
-                  🔑 Diagnostyka tokenu dostępu
-                </h3>
-                <div className="mt-4 flex flex-col gap-3">
-                  <div className="text-sm text-gray-700 dark:text-gray-200">
-                    Status: {accessToken ? (
-                      <span className="text-green-600 dark:text-green-400">
-                        Token dostępny ({accessToken.substring(0, 10)}...)
-                      </span>
-                    ) : (
-                      <span className="text-red-600 dark:text-red-400">
-                        Brak tokenu dostępu
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => {
-                        const token = sessionStorage.getItem("accessToken");
-                        if (token) {
-                          setAccessToken(token);
-                          alert(`Token znaleziony: ${token.substring(0, 15)}...`);
-                          fetchCalendars(token);
-                        } else {
-                          alert("Nie znaleziono tokenu w sessionStorage");
-                        }
-                      }}
-                      className="bg-blue-600 text-white px-3 py-2 rounded text-sm"
-                    >
-                      Odśwież token
-                    </button>
-                    <button
-                      onClick={() => {
-                        const token = sessionStorage.getItem("accessToken");
-                        if (!token) {
-                          alert("Brak tokenu w sessionStorage!");
-                          return;
-                        }
-                        
-                        console.log("🔄 Testowanie dostępu do Calendar API...");
-                        fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
-                          headers: {
-                            Authorization: `Bearer ${token}`,
-                          },
-                        })
-                          .then(res => {
-                            if (!res.ok) {
-                              throw new Error(`Status: ${res.status}`);
-                            }
-                            return res.json();
-                          })
-                          .then(data => {
-                            console.log("✅ Calendar API działa! Otrzymano listę kalendarzy:", data);
-                            alert("✅ Calendar API działa! Sprawdź konsolę, aby zobaczyć listę kalendarzy.");
-                          })
-                          .catch(err => {
-                            console.error("❌ Błąd dostępu do Calendar API:", err);
-                            alert(`❌ Błąd dostępu do Calendar API: ${err.message}`);
-                          });
-                      }}
-                      className="bg-green-600 text-white px-3 py-2 rounded text-sm ml-2"
-                    >
-                      Test Calendar API
-                    </button>
-                    <GoogleCalendarAuth 
-                      onAuthSuccess={handleAuthSuccess}
-                      onAuthFailure={handleAuthFailure}
-                    />
-                  </div>
-                </div>
-              </div>
+
 
             </div>
           </div>

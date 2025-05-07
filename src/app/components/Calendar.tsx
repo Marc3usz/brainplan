@@ -21,7 +21,7 @@ interface CalendarProps {
 }
 
 export default function Calendar({ accessToken }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,47 +38,48 @@ export default function Calendar({ accessToken }: CalendarProps) {
   const calendarDays = Array(startDay).fill(null).concat(monthDays);
 
   // Fetch calendar events for the current month
-  useEffect(() => {
-    async function fetchEvents() {
-      // Skip if no access token
-      if (!accessToken) {
-        setError('No access token available');
-        return;
-      }
-      
-      setLoading(true);
-      setError('');
-      
-      try {
-        const timeMin = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-        const timeMax = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
-        
-        const response = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            }
-          }
-        );
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error?.message || 'Failed to fetch events');
-        }
-        
-        const data = await response.json();
-        setEvents(data.items || []);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        setError('Failed to load calendar events');
-      } finally {
-        setLoading(false);
-      }
+  const fetchEvents = async () => {
+    // Skip if no access token
+    if (!accessToken) {
+      setError('No access token available');
+      return;
     }
     
+    setLoading(true);
+    setError('');
+    
+    try {
+      const timeMin = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+      const timeMax = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
+      
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Failed to fetch events');
+      }
+      
+      const data = await response.json();
+      setEvents(data.items || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setError('Failed to load calendar events');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Load events only once on initial render
+  useEffect(() => {
     fetchEvents();
-  }, [currentDate, accessToken]);
+  }, []);
 
   // Check if a date has events
   const getEventsForDate = (date: Date) => {
@@ -123,6 +124,17 @@ export default function Calendar({ accessToken }: CalendarProps) {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
+          </button>
+          <button 
+            onClick={fetchEvents}
+            className="p-2 rounded bg-blue-500 hover:bg-blue-600 text-white flex items-center"
+            aria-label="Refresh calendar"
+            disabled={loading}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
           </button>
         </div>
       </div>
