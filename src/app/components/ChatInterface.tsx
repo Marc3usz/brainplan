@@ -186,6 +186,23 @@ export function ChatInterface() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
+      // Check if the message contains a URL
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urls = message.match(urlRegex);
+      
+      if (urls && urls.length > 0) {
+        // Notify user that the link is being processed
+        const userMessage = { role: "user" as const, content: message };
+        const botNotification = { 
+          role: "assistant" as const, 
+          content: `I detected a link in your message. Running the scraper for: ${urls[0]}` 
+        };
+        
+        // Log the link detection
+        console.log(`Link detected: ${urls[0]} - This will be processed by the scraper backend tool.`);
+      }
+      
+      // Always send the message to the chatbot
       sendMessage(message);
       setMessage("");
     }

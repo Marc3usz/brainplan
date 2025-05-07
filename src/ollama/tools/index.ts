@@ -4,8 +4,9 @@ import getWeather from "./getWeather";
 import getSecret from "./getSecret";
 import getIpInfo from "./getIpInfo";
 import getCalendarInfo from "./getCalendar";
+import scraperLink from "./scraperLink";
 
 // Export all tools as a single array for toolsLoader compatibility
-const ollamaTools = [...findCity, ...getWeather, ...getSecret, ...getIpInfo, ...getCalendarInfo];
+const ollamaTools = [...findCity, ...getWeather, ...getSecret, ...getIpInfo, ...getCalendarInfo, ...scraperLink];
 
 export default ollamaTools;
