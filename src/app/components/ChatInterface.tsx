@@ -9,6 +9,28 @@ import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { User } from "firebase/auth";
 
+// Define SpeechRecognition interfaces
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+}
+
+
 // Typy języków do rozpoznawania tekstu
 type LanguageOption = {
   code: string;
@@ -200,6 +222,8 @@ export function ChatInterface() {
   const [userName, setUserName] = useState<string>("");
   const [showWelcome, setShowWelcome] = useState<boolean>(true);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
 
   // Get Google API credentials from environment variables
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
@@ -287,6 +311,23 @@ export function ChatInterface() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
+      // Check if the message contains a URL
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urls = message.match(urlRegex);
+      
+      if (urls && urls.length > 0) {
+        // Notify user that the link is being processed
+        const userMessage = { role: "user" as const, content: message };
+        const botNotification = { 
+          role: "assistant" as const, 
+          content: `I detected a link in your message. Running the scraper for: ${urls[0]}` 
+        };
+        
+        // Log the link detection
+        console.log(`Link detected: ${urls[0]} - This will be processed by the scraper backend tool.`);
+      }
+      
+      // Always send the message to the chatbot
       sendMessage(message);
       setMessage("");
     }
@@ -346,11 +387,94 @@ export function ChatInterface() {
     });
   };
 
+  // Handle voice input
+  const handleVoiceInput = () => {
+    if (isListening) {
+      // Stop listening
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
+      setIsListening(false);
+      return;
+    }
+
+    // Start listening
+    try {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognitionAPI) {
+        alert('Speech recognition is not supported in this browser.');
+        return;
+      }
+
+      const recognition = new SpeechRecognitionAPI();
+      recognition.lang = 'pl-PL';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript;
+        setMessage((prev) => prev + ' ' + transcript);
+      };
+
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+      setSpeechRecognition(recognition);
+      setIsListening(true);
+    } catch (error) {
+      console.error('Speech recognition error:', error);
+      alert('Could not initialize speech recognition.');
+    }
+  };
+
+  // Handle copying message to clipboard
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content)
+      .then(() => {
+        alert('Message copied to clipboard!');
+      })
+      .catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+  };
+
+  // Handle liking a message
+  const handleLikeMessage = (index: number) => {
+    console.log(`Message #${index} liked`);
+    // Here you would implement the actual feedback mechanism
+    alert('Thanks for your feedback!');
+  };
+
+  // Handle disliking a message
+  const handleDislikeMessage = (index: number) => {
+    console.log(`Message #${index} disliked`);
+    // Here you would implement the actual feedback mechanism
+    alert('Thanks for your feedback. We\'ll try to improve.');
+  };
+
+  // Handle regenerating a response
+  const handleRegenerateMessage = (index: number) => {
+    const userMessageIndex = index - 1;
+    if (userMessageIndex >= 0 && messages[userMessageIndex]?.role === 'user') {
+      const originalMessage = messages[userMessageIndex].content;
+      sendMessage(originalMessage);
+    } else {
+      alert('Cannot regenerate this message.');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full w-full max-w-none p-2 sm:p-4 text-gray-100 relative">
       {/* Improved background with gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-indigo-900/20 to-purple-900/30 pointer-events-none z-0" />
-      <div className="flex-1 overflow-y-auto mb-2 sm:mb-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 relative z-10">
+      <div className="flex-1 overflow-y-auto mb-2 sm:mb-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 relative z-10 max-w-4xl mx-auto w-full">
         {/* Welcome section with user name and example prompts */}
         {showWelcome && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-2 sm:p-6 rounded-lg">
@@ -403,7 +527,53 @@ export function ChatInterface() {
         {messages
           .filter((msg) => msg.role !== "tool")
           .map((msg, index) => (
-            <Message key={index} role={msg.role} content={msg.content} />
+            <div key={index} className="relative group">
+              <Message role={msg.role} content={msg.content} />
+              {msg.role === "assistant" && (
+                <div className="absolute -bottom-2 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button 
+                    onClick={() => handleCopyMessage(msg.content)}
+                    className="p-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors duration-200 shadow-md border border-gray-700"
+                    title="Copy message"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => handleLikeMessage(index)}
+                    className="p-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors duration-200 shadow-md border border-gray-700"
+                    title="Thumbs up"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => handleDislikeMessage(index)}
+                    className="p-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors duration-200 shadow-md border border-gray-700"
+                    title="Thumbs down"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                      <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm10-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path>
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => handleRegenerateMessage(index)}
+                    className="p-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors duration-200 shadow-md border border-gray-700"
+                    title="Regenerate response"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                      <path d="M23 4v6h-6"></path>
+                      <path d="M1 20v-6h6"></path>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                      <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
         {isLoading && <Message role="assistant" content="" isLoading={true} />}
         <div ref={messagesEndRef} />
@@ -538,14 +708,29 @@ export function ChatInterface() {
 )}
 
         {/* RESPONSYWNY FORMULARZ z przyciskiem toggle aparatu */}
-<form onSubmit={handleSubmit} className="flex gap-1 sm:gap-2 w-full">
+<form onSubmit={handleSubmit} className="flex gap-1 sm:gap-2 w-full max-w-3xl mx-auto my-2 px-4">
   <input
     type="text"
     value={message}
     onChange={(e) => setMessage(e.target.value)}
     placeholder="Wpisz swoją wiadomość..."
-    className="flex-1 p-2 sm:p-3 text-sm sm:text-base bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+    className="flex-1 p-2 sm:p-3 text-sm sm:text-base bg-gray-800 border border-gray-700 rounded-full text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
   />
+  {/* Microphone button */}
+  <button
+    type="button"
+    onClick={() => handleVoiceInput()}
+    className={`p-2.5 rounded-full focus:outline-none transition-colors duration-200 ${isListening ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+    title={isListening ? 'Stop recording' : 'Voice input'}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      <line x1="12" y1="19" x2="12" y2="23"></line>
+      <line x1="8" y1="23" x2="16" y2="23"></line>
+    </svg>
+  </button>
+
   {/* Przycisk toggle aparat - stylistyka jak Send, tylko czerwony */}
   <button
     type="button"
@@ -553,29 +738,33 @@ export function ChatInterface() {
     onClick={() => {
       if (showCamera) handleStopCamera(); else handleCameraClick();
     }}
-    className={`px-3 sm:px-6 py-2 sm:py-3 rounded-md font-semibold shadow-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 flex items-center justify-center ${showCamera ? 'bg-gray-700 text-white hover:bg-red-800' : 'bg-red-600 text-white hover:bg-red-700'} disabled:bg-gray-600 disabled:cursor-not-allowed`}
-    style={{ minWidth: 48 }}
+    className={`p-2.5 rounded-full focus:outline-none transition-colors duration-200 ${showCamera ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+    title="Camera"
   >
     {/* Ikona aparatu */}
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 19.5v-11.25A2.25 2.25 0 014.5 6h2.086a1.5 1.5 0 001.06-.44l1.414-1.414a1.5 1.5 0 011.06-.44h2.76a1.5 1.5 0 011.06.44l1.414 1.414a1.5 1.5 0 001.06.44H19.5a2.25 2.25 0 012.25 2.25V19.5a2.25 2.25 0 01-2.25 2.25H4.5A2.25 2.25 0 012.25 19.5z" />
-      <circle cx="12" cy="13" r="3.25" stroke="currentColor" strokeWidth="1.5" />
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+      <circle cx="12" cy="13" r="4"></circle>
     </svg>
   </button>
+  
   {/* Przycisk Send */}
   <button
     type="submit"
     disabled={isLoading}
-    className="px-3 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-    style={{ minWidth: 48 }}
+    className="px-5 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none"
   >
-    Send
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <line x1="22" y1="2" x2="11" y2="13"></line>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    </svg>
   </button>
+
   {/* Przycisk do dodawania pliku */}
   <label
     htmlFor="file-input"
-    className="px-3 sm:px-6 py-2 sm:py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 cursor-pointer"
-    style={{ minWidth: 48 }}
+    className="p-2.5 rounded-full bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer transition-colors duration-200 focus:outline-none inline-flex items-center justify-center"
+    title="Attach file"
   >
     <input
       id="file-input"
@@ -583,7 +772,9 @@ export function ChatInterface() {
       onChange={handleFileChange}
       className="hidden"
     />
-    Attach
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.48-8.48l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+    </svg>
   </label>
 </form>
       </div>
@@ -595,5 +786,13 @@ export function ChatInterface() {
 declare global {
   interface Window {
     gapi: any;
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+      prototype: SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+      prototype: SpeechRecognition;
+    };
   }
 }

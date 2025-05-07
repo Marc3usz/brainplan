@@ -15,6 +15,9 @@ const SYSTEM_PROMPT = `
   Do not send full tool response, make it short and concise.
 
   If asked about current weather, use the getWeather tool, use the getLocation tool for longitude and latitude.
+  
+  IMPORTANT: Whenever a user message contains a URL/link, you MUST call the scraperLink tool with the URL to process it. This is critical.
+  Always look for URLs in user messages and process them using the scraperLink tool.
 ` as const;
 
 // Initialize Ollama client
