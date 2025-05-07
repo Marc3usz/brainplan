@@ -626,10 +626,10 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-none p-2 sm:p-4 text-gray-100 relative">
+    <div className="flex flex-col h-full w-full max-w-none p-1 sm:p-4 text-gray-100 relative">
       {/* Improved background with gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-indigo-900/20 to-purple-900/30 pointer-events-none z-0" />
-      <div className="flex-1 overflow-y-auto mb-2 sm:mb-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 relative z-10 max-w-4xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto mb-1 sm:mb-4 space-y-2 sm:space-y-4 relative z-10 max-w-4xl mx-auto w-full scrollbar-hide px-1 sm:px-0">
         {/* Welcome section with user name and example prompts */}
         {showWelcome && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-2 sm:p-6 rounded-lg">
@@ -742,14 +742,14 @@ export function ChatInterface() {
         
 {/* Display current file attachments with persistence indicator */}
 {attachments.length > 0 && (
-  <div className="bg-gray-800/80 rounded-lg p-2 mb-2">
-    <div className="flex items-center justify-between mb-2">
-      <h4 className="text-sm text-gray-300">
-        Attached Files 
+  <div className="bg-gray-800/80 rounded-lg p-1.5 sm:p-2 mb-1 sm:mb-2">
+    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between mb-1 sm:mb-2 gap-1">
+      <h4 className="text-xs sm:text-sm text-gray-300 flex items-center flex-wrap">
+        <span>Attached Files</span> 
         <span 
-          className="inline-flex items-center ml-2 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-900/60 text-blue-200" 
+          className="inline-flex items-center ml-1 sm:ml-2 px-1 sm:px-1.5 py-0.5 rounded text-xs font-medium bg-blue-900/60 text-blue-200" 
           title="Files remain available throughout your entire conversation">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 mr-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-2.5 sm:w-3 h-2.5 sm:h-3 mr-0.5 sm:mr-1">
             <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
           persistent
@@ -757,30 +757,30 @@ export function ChatInterface() {
       </h4>
       <button
         onClick={clearAttachments}
-        className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center"
+        className="text-2xs sm:text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center"
         title="Remove all attachments"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
         </svg>
-        Clear all
+        <span className="hidden sm:inline">Clear all</span>
       </button>
     </div>
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1 sm:gap-2">
       {attachments.map(attachment => (
         <div 
           key={attachment.id} 
-          className="flex items-center bg-gray-700/70 text-gray-200 text-xs rounded-full px-3 py-1.5 gap-2 group relative"
+          className="flex items-center bg-gray-700/70 text-gray-200 text-2xs sm:text-xs rounded-full px-2 sm:px-3 py-1 sm:py-1.5 gap-1 sm:gap-2 group relative"
           title={`Reference with #${attachment.id} in your message`}
         >
-          <span className="truncate max-w-[150px]">{attachment.name}</span>
-          <span className="text-gray-400">(#{attachment.id})</span>
+          <span className="truncate max-w-[80px] sm:max-w-[150px]">{attachment.name}</span>
+          <span className="text-gray-400 text-2xs sm:text-xs">(#{attachment.id})</span>
           <button
             onClick={() => removeAttachment(attachment.id)}
             className="text-gray-400 hover:text-red-400"
             aria-label="Remove attachment"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
@@ -791,11 +791,11 @@ export function ChatInterface() {
 )}
 
 {showCamera && (
-  <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/80 p-2 sm:relative sm:bg-transparent sm:p-0">
+  <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/95 p-1 sm:p-2 sm:relative sm:bg-transparent">
     {/* Przycisk powrotu (X) tylko na mobile */}
     <button
       onClick={handleStopCamera}
-      className="absolute top-4 left-4 z-50 bg-black/70 text-white rounded-full p-2 shadow-lg focus:outline-none focus:ring-2 focus:ring-white/80 sm:hidden"
+      className="absolute top-2 right-2 z-50 bg-black/70 text-white rounded-full p-2 shadow-lg focus:outline-none focus:ring-2 focus:ring-white/80 sm:hidden"
       aria-label="Zamknij aparat"
       type="button"
     >
@@ -890,74 +890,78 @@ export function ChatInterface() {
 )}
 
         {/* RESPONSYWNY FORMULARZ z przyciskiem toggle aparatu */}
-<form onSubmit={handleSubmit} className="flex gap-1 sm:gap-2 w-full max-w-3xl mx-auto my-2 px-4">
+<form
+  onSubmit={handleSubmit}
+  className="flex items-center space-x-1 sm:space-x-3 bg-gray-900/80 backdrop-blur p-1.5 sm:p-3 rounded-xl border border-gray-700/80 max-w-3xl mx-auto w-full"
+>
+  {/* Input */}
   <FormattedInput
     value={message}
     onChange={(e) => setMessage(e.target.value)}
-    placeholder="Wpisz swoją wiadomość..."
+    placeholder="Type your message..."
     className="flex-1"
     attachments={attachments}
   />
-  {/* Microphone button */}
-  <button
-    type="button"
-    onClick={() => handleVoiceInput()}
-    className={`p-2.5 rounded-full focus:outline-none transition-colors duration-200 ${isListening ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-    title={isListening ? 'Stop recording' : 'Voice input'}
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-      <line x1="12" y1="19" x2="12" y2="23"></line>
-      <line x1="8" y1="23" x2="16" y2="23"></line>
-    </svg>
-  </button>
-
-  {/* Przycisk toggle aparat - stylistyka jak Send, tylko czerwony */}
-  <button
-    type="button"
-    aria-label={showCamera ? 'Wyłącz aparat' : 'Włącz aparat'}
-    onClick={() => {
-      if (showCamera) handleStopCamera(); else handleCameraClick();
-    }}
-    className={`p-2.5 rounded-full focus:outline-none transition-colors duration-200 ${showCamera ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
-    title="Camera"
-  >
-    {/* Ikona aparatu */}
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-      <circle cx="12" cy="13" r="4"></circle>
-    </svg>
-  </button>
   
-  {/* Przycisk Send */}
-  <button
-    type="submit"
-    disabled={isLoading}
-    className="px-5 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <line x1="22" y1="2" x2="11" y2="13"></line>
-      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-    </svg>
-  </button>
+  <div className="flex items-center space-x-1 sm:space-x-3">
+    {/* Przycisk do nagrywania głosu */}
+    <button
+      type="button"
+      onClick={handleVoiceInput}
+      disabled={isListening}
+      className={`p-2 sm:p-2.5 rounded-full ${isListening ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'} transition-colors duration-200 focus:outline-none`}
+      title="Record voice"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 sm:w-5 sm:h-5">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+    </button>
+    
+    {/* Przycisk do robienia zdjęć */}
+    <button
+      type="button"
+      onClick={handleCameraClick}
+      className="p-2 sm:p-2.5 rounded-full bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors duration-200 focus:outline-none"
+      title="Take photo"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 sm:w-5 sm:h-5">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+    </button>
+    
+    {/* Przycisk Send */}
+    <button
+      type="submit"
+      disabled={isLoading}
+      className="p-2 sm:p-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors duration-200 focus:outline-none"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 sm:w-5 sm:h-5">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
 
-  {/* Przycisk do dodawania pliku */}
-  <label
-    htmlFor="file-input"
-    className="p-2.5 rounded-full bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer transition-colors duration-200 focus:outline-none inline-flex items-center justify-center"
-    title="Attach file"
-  >
-    <input
-      id="file-input"
-      type="file"
-      onChange={handleFileChange}
-      className="hidden"
-    />
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.48-8.48l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-    </svg>
-  </label>
+    {/* Przycisk do dodawania pliku */}
+    <label
+      htmlFor="file-input"
+      className="p-2 sm:p-2.5 rounded-full bg-gray-700 text-gray-300 hover:bg-gray-600 cursor-pointer transition-colors duration-200 focus:outline-none inline-flex items-center justify-center"
+      title="Attach file"
+    >
+      <input
+        id="file-input"
+        type="file"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 sm:w-5 sm:h-5">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.48-8.48l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+      </svg>
+    </label>
+  </div>
 </form>
       </div>
     </div>

@@ -55,13 +55,13 @@ export function Message({ role, content, isLoading, attachments = [] }: MessageP
   }, [response, attachments]);
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-2 sm:mb-3`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-1.5 sm:mb-3`}>
       <div
-        className={`p-3 sm:p-4 ${
+        className={`p-2 sm:p-3 md:p-4 ${
           isUser
-            ? "bg-gray-800 rounded-l-2xl rounded-br-2xl border border-gray-700"
-            : "bg-gray-900 rounded-r-2xl rounded-bl-2xl border border-gray-800"
-        } max-w-[70%] sm:max-w-[60%] md:max-w-[55%] text-sm sm:text-base shadow-md`}
+            ? "bg-gray-800 rounded-l-xl sm:rounded-l-2xl rounded-br-xl sm:rounded-br-2xl border border-gray-700"
+            : "bg-gray-900 rounded-r-xl sm:rounded-r-2xl rounded-bl-xl sm:rounded-bl-2xl border border-gray-800"
+        } max-w-[85%] sm:max-w-[75%] md:max-w-[65%] text-xs sm:text-sm md:text-base shadow-md`}
       >
         {isLoading ? (
           <div className="animate-pulse">
