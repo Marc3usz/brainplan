@@ -30,7 +30,6 @@ interface SpeechRecognition extends EventTarget {
   onend: () => void;
 }
 
-
 // Typy języków do rozpoznawania tekstu
 type LanguageOption = {
   code: string;
@@ -161,17 +160,23 @@ export function ChatInterface() {
     const selectedFile = event.target.files?.[0] || null;
     if (!selectedFile) return;
     
-    // Only process text files
-    if (!selectedFile.type.includes('text/') && !selectedFile.name.endsWith('.txt')) {
-      alert('Please select a text file (.txt)');
+    // Only process text files or PDFs
+    if (!selectedFile.type.includes('text/') && !selectedFile.name.endsWith('.txt') && !selectedFile.type.includes('application/pdf')) {
+      alert('Please select a text file (.txt) or PDF file (.pdf)');
       return;
     }
 
     setIsProcessingFile(true);
     
     try {
-      // Read the file content
-      const content = await readFileAsText(selectedFile);
+      let content = '';
+      
+      if (selectedFile.type.includes('application/pdf')) {
+        content = await extractTextFromPDF(selectedFile);
+      } else {
+        // Read the file content
+        content = await readFileAsText(selectedFile);
+      }
       
       // Generate unique ID for the attachment
       const id = selectedFile.name.replace(/\.\w+$/, '').replace(/\s+/g, '_').toLowerCase();
@@ -181,7 +186,7 @@ export function ChatInterface() {
         id,
         name: selectedFile.name,
         content,
-        type: 'text/plain'
+        type: selectedFile.type
       });
       
       // Notify user
@@ -210,6 +215,156 @@ export function ChatInterface() {
       };
       reader.onerror = () => reject(reader.error);
       reader.readAsText(file);
+    });
+  };
+
+  // Helper function to extract text from PDF files with OCR support
+  const extractTextFromPDF = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          if (!e.target?.result) {
+            reject(new Error('Failed to read PDF'));
+            return;
+          }
+          
+          // Import pdfjs-dist dynamically
+          const pdfjsLib = await import('pdfjs-dist');
+          
+          // Configure PDF.js worker
+          const workerSrc = '/pdf.worker.min.js';
+          pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+          
+          // Load the PDF document
+          const loadingTask = pdfjsLib.getDocument({
+            data: new Uint8Array(e.target.result as ArrayBuffer)
+          });
+          
+          const pdf = await loadingTask.promise;
+          
+          // PDF metadata
+          const metadata = await pdf.getMetadata().catch(() => ({}));
+          const title = metadata?.info?.Title || file.name;
+          const totalPages = pdf.numPages;
+          let fullText = `[PDF: ${title} (${totalPages} pages)]\n\n`;
+          
+          // Process each page with both text extraction and OCR
+          for (let i = 1; i <= Math.min(totalPages, 20); i++) { // Limit to first 20 pages
+            try {
+              const page = await pdf.getPage(i);
+              
+              // First try standard text extraction
+              const textContent = await page.getTextContent();
+              
+              // Process text with improved layout recognition
+              let lastY = null;
+              let pageText = '';
+              
+              for (const item of textContent.items) {
+                const textItem = item as pdfjsLib.TextItem;
+                
+                // Add newlines when position changes significantly
+                if (lastY !== null && Math.abs(textItem.transform[5] - lastY) > 5) {
+                  pageText += '\n';
+                }
+                
+                pageText += textItem.str + ' ';
+                lastY = textItem.transform[5];
+              }
+              
+              // Clean up text
+              pageText = pageText.replace(/\s+/g, ' ').trim();
+              
+              // Check if extracted text is too limited (less than 10 chars per page on average)
+              const contentfulText = pageText.replace(/\s+/g, '').trim();
+              
+              // If text extraction yielded minimal results, try OCR on page image
+              if (contentfulText.length < 50) {
+                try {
+                  // Get page viewport
+                  const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+                  
+                  // Create canvas for rendering
+                  const canvas = document.createElement('canvas');
+                  canvas.width = viewport.width;
+                  canvas.height = viewport.height;
+                  
+                  const canvasContext = canvas.getContext('2d');
+                  if (!canvasContext) {
+                    throw new Error('Failed to get canvas context');
+                  }
+                  
+                  // Render PDF page to canvas
+                  await page.render({
+                    canvasContext,
+                    viewport,
+                  }).promise;
+                  
+                  // Convert canvas to image data URL
+                  const imageData = canvas.toDataURL('image/png');
+                  
+                  // Initialize Tesseract worker for OCR
+                  const worker = await createWorker(selectedLanguage || 'eng');
+                  
+                  // Perform OCR
+                  const { data } = await worker.recognize(imageData);
+                  
+                  // If OCR found more text than regular extraction, use it
+                  if (data.text.replace(/\s+/g, '').length > contentfulText.length) {
+                    pageText = data.text;
+                    fullText += `--- Page ${i} (OCR) ---\n${pageText}\n\n`;
+                  } else {
+                    fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+                  }
+                  
+                  // Terminate worker
+                  await worker.terminate();
+                } catch (ocrError) {
+                  console.error(`OCR error on page ${i}:`, ocrError);
+                  fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+                }
+              } else {
+                fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+              }
+            } catch (pageError) {
+              console.error(`Error extracting text from page ${i}:`, pageError);
+              fullText += `--- Page ${i} --- [Error: Could not extract text]\n\n`;
+            }
+          }
+          
+          // Add note if we didn't process all pages
+          if (totalPages > 20) {
+            fullText += `[Note: Only showing first 20 of ${totalPages} pages]\n\n`;
+          }
+          
+          // Check if the extracted text is too limited overall
+          const contentfulText = fullText.replace(/\[.*?\]|\n|Page \d+|---/g, '').trim();
+          if (contentfulText.length < 100) {
+            // Try to get more info about the document
+            const outline = await pdf.getOutline().catch(() => []);
+            let outlineText = '';
+            
+            if (outline && outline.length > 0) {
+              outlineText = '\nDocument structure:\n' + 
+                outline.map(item => `- ${item.title}`).join('\n');
+            }
+            
+            fullText = `This PDF appears to contain limited machine-readable text. OCR has been attempted where possible.\n\n` +
+              `File: ${title}\nPages: ${totalPages}${outlineText}\n\n` +
+              `Extracted text:\n${contentfulText || "[No readable text found]"}`;
+          }
+          
+          resolve(fullText);
+        } catch (error) {
+          console.error('Error extracting text from PDF:', error);
+          reject(new Error(`Failed to extract text from PDF: ${error.message}`));
+        }
+      };
+      
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file);
     });
   };
 
