@@ -77,7 +77,7 @@ export default function AuthStatus() {
               alt={displayName} 
               size={28} 
             />
-            <span className="text-xs sm:text-sm font-medium hidden sm:inline">
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline text-gray-800">
               {displayName}
             </span>
           </div>
