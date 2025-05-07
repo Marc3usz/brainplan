@@ -6,7 +6,8 @@ import {
   onAuthStateChanged,
   getAdditionalUserInfo,
   User,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 
@@ -15,6 +16,7 @@ interface SyncResult {
   success: boolean;
   user?: any;
   error?: any;
+  accessToken?: string;
 }
 
 /**
@@ -65,33 +67,47 @@ export async function signInWithEmail(email: string, password: string): Promise<
  */
 export async function signInWithGoogle(): Promise<SyncResult> {
   try {
+    // Force re-authentication to get a new token
+    googleProvider.setCustomParameters({
+      prompt: 'consent select_account',
+      access_type: 'offline',
+    });
+
     const result = await signInWithPopup(auth, googleProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const accessToken = credential?.accessToken;
     const user = result.user;
-    const additionalInfo = getAdditionalUserInfo(result);
-    
-    // Persist user data
-    if (user) {
-      const userData = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        isNewUser: additionalInfo?.isNewUser || false,
-      };
+
+    // Zapisz token dostępu Google (OAuth2) do sessionStorage
+    if (accessToken) {
+      sessionStorage.setItem("accessToken", accessToken);
+      console.log("✅ Zapisano Google OAuth2 Access Token do sessionStorage");
+      console.log(`✅ Token zaczyna się od: ${accessToken.substring(0, 10)}...`);
       
-      // Store user data in localStorage for client-side persistence
-      localStorage.setItem('firebaseUser', JSON.stringify(userData));
-      
-      // Set a cookie for server-side auth detection
-      document.cookie = `Firebase-Auth-Token=${user.uid}; path=/; max-age=${60*60*24*7}; SameSite=Lax`;
-      
-      // Sync with MongoDB
-      await syncUserWithMongoDB(user);
+      // Dodatkowa weryfikacja czy to na pewno token OAuth2
+      if (accessToken.startsWith('ya29')) {
+        console.log("✅ Weryfikacja tokenu: Poprawny format tokenu OAuth2 (ya29...)");
+      } else {
+        console.warn("⚠️ Uwaga: Token nie zaczyna się od 'ya29', co może oznaczać, że to nie jest token OAuth2");
+      }
+    } else {
+      console.error("❌ Nie uzyskano tokenu OAuth2 - Calendar API nie będzie działać!");
+      // Spróbuj pobrać token bezpośrednio z tokenu ID
+      try {
+        await user.getIdToken(true).then((idToken) => {
+          console.log("⚠️ Uzyskano tylko ID Token, który nie zadziała z Calendar API.");
+        });
+      } catch (tokenError) {
+        console.error("❌ Nie udało się uzyskać żadnego tokenu:", tokenError);
+      }
     }
-    
-    return { success: true, user };
+
+    // Synchronizacja z MongoDB
+    await syncUserWithMongoDB(user);
+
+    return { success: true, user, accessToken };
   } catch (error) {
-    console.error('Google sign in error:', error);
+    console.error("Google sign in error:", error);
     return { success: false, error };
   }
 }
@@ -102,7 +118,13 @@ export async function signInWithGoogle(): Promise<SyncResult> {
 export async function signOutFromFirebase(): Promise<SyncResult> {
   try {
     await signOut(auth);
+    
+    // Usuń dane użytkownika z localStorage
     localStorage.removeItem('firebaseUser');
+    
+    // Usuń token Google z sessionStorage
+    sessionStorage.removeItem('accessToken');
+    console.log("✅ Usunięto Google Access Token z sessionStorage");
     
     // Clear the auth cookie
     document.cookie = 'Firebase-Auth-Token=; path=/; max-age=0; SameSite=Lax';

@@ -9,13 +9,14 @@ import bcrypt from 'bcryptjs';
 import { auth } from '@/lib/firebase';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 
-// Add id property to the Session User type
-interface ExtendedUser extends NextAuthUser {
+// Rozszerzone typy dla NextAuth
+interface ExtendedUser extends Omit<NextAuthUser, 'id'> {
   id?: string;
 }
 
-interface ExtendedSession extends Session {
+interface ExtendedSession extends Omit<Session, 'user'> {
   user?: ExtendedUser;
+  accessToken?: string;
 }
 
 const authOptions: AuthOptions = {
@@ -110,10 +111,27 @@ const authOptions: AuthOptions = {
     async session({ session, token }: { session: ExtendedSession; token: any }) {
       if (token && session.user) {
         session.user.id = token.sub;
+        
+        // Zapisz token dostępu do sesji, jeśli istnieje
+        if (token.accessToken) {
+          session.accessToken = token.accessToken;
+        }
       }
       return session;
     },
+    async jwt({ token, account }: { token: any; account: any }) {
+      // Zachowaj token dostępu, gdy użytkownik się loguje
+      if (account?.access_token) {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
     async signIn({ account, profile }: { account: any; profile?: any }) {
+      // Jeśli mamy token dostępu, zapisz go w sessionStorage (po stronie klienta)
+      if (typeof window !== 'undefined' && account?.access_token) {
+        sessionStorage.setItem('accessToken', account.access_token);
+        console.log("✅ Zapisano NextAuth Google Access Token do sessionStorage");
+      }
       return true;
     },
   },
