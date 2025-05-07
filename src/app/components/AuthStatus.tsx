@@ -7,6 +7,12 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { initFirebaseAuth, signOutFromFirebase } from '@/lib/auth-helper';
 import ProfileImage from './ProfileImage';
 import Loader from './Loader';
+import { Session } from 'next-auth';
+
+// Rozszerzony typ sesji, który może zawierać accessToken
+interface ExtendedSession extends Session {
+  accessToken?: string;
+}
 
 type CombinedUser = {
   name?: string | null;
@@ -18,6 +24,7 @@ type CombinedUser = {
 
 export default function AuthStatus() {
   const { data: session, status } = useSession();
+  const extendedSession = session as ExtendedSession;
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | any | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,11 +42,27 @@ export default function AuthStatus() {
     };
   }, []);
 
+  // Zapisz token dostępu z nextAuth do sessionStorage
+  useEffect(() => {
+    if (extendedSession?.accessToken) {
+      // Sprawdź, czy token to token OAuth2
+      if (extendedSession.accessToken.startsWith('ya29')) {
+        sessionStorage.setItem('accessToken', extendedSession.accessToken);
+        console.log('✅ Zapisano token OAuth2 z sesji NextAuth do sessionStorage');
+      } else {
+        console.log('⚠️ Token z sesji NextAuth nie jest tokenem OAuth2:', extendedSession.accessToken.substring(0, 10));
+      }
+    }
+  }, [extendedSession]);
+
   const handleSignOut = async () => {
     // Sign out from both Firebase and NextAuth
     if (firebaseUser) {
       await signOutFromFirebase();
     }
+    
+    // Usuń token z sessionStorage przy wylogowaniu
+    sessionStorage.removeItem('accessToken');
     
     await nextAuthSignOut({ callbackUrl: '/' });
   };
