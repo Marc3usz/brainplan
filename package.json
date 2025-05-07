@@ -9,7 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth/mongodb-adapter": "^3.9.0",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.2",
+    "mongodb": "^6.16.0",
+    "mongoose": "^8.14.1",
     "next": "15.3.1",
+    "next-auth": "^4.24.11",
     "ollama": "^0.5.15",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
