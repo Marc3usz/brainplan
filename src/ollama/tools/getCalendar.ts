@@ -223,7 +223,7 @@ const functions: ToolFunction[] = [
     type: "function",
     function: {
       name: "getCalendar",
-      description: "Returns the google calendar data for the active user.",
+      description: "Returns the google calendar data for the active user. Make sure to handle displaying the relevant data from the json. Make it easy to read and readable",
     },
     execute: async (): Promise<{ value: string }> => {
       try {
