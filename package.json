@@ -12,6 +12,8 @@
     "@auth/mongodb-adapter": "^3.9.0",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
+    "firebase": "^11.6.1",
+    "firebase-admin": "^13.3.0",
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.1",
     "next": "15.3.1",

@@ -1,9 +1,11 @@
-import { ChatInterface } from "./components/ChatInterface";
+import Header from "./components/Header";
+import { ProtectedChat } from "./components/ProtectedChat";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white dark:bg-gray-900">
-      <ChatInterface />
-    </main>
+    <>
+      <Header />
+      <ProtectedChat />
+    </>
   );
 }
