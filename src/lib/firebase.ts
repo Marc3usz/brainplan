@@ -2,6 +2,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth"; 
 
+
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCUMfB8hE_tqhlvPKtixuou_6xF8LiGN0A",
@@ -18,8 +19,15 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+// Add required scopes for Google Calendar API
+googleProvider.addScope('https://www.googleapis.com/auth/calendar');
+googleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+googleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+
+// Force consent selection every time to ensure we get refresh tokens
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: 'consent select_account',
+  access_type: 'offline',
 });
 
 export { app, auth, googleProvider };

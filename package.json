@@ -12,6 +12,7 @@
     "@auth/mongodb-adapter": "^3.9.0",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
+    "date-fns": "^4.1.0",
     "firebase": "^11.6.1",
     "firebase-admin": "^13.3.0",
     "mongodb": "^6.16.0",
