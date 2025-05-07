@@ -88,7 +88,7 @@ export function useChat() {
       enhancedContent = `${content}\n\n`;
       
       referencedAttachments.forEach(attachment => {
-        enhancedContent += `<attachment>\n${attachment.content}\n</attachment>\n\n`;
+        enhancedContent += `<attachment id="${attachment.id}">\n${attachment.content}\n</attachment>\n\n`;
       });
     }
 
@@ -155,8 +155,6 @@ export function useChat() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-      // Clear attachments after sending
-      clearAttachments();
     }
   };
 

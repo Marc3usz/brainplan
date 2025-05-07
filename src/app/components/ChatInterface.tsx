@@ -369,7 +369,7 @@ export function ChatInterface() {
   };
 
   const [message, setMessage] = useState("");
-  const { messages, sendMessage, isLoading, attachments, addAttachment, removeAttachment } = useChat();
+  const { messages, sendMessage, isLoading, attachments, addAttachment, removeAttachment, clearAttachments } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
   const { isAuthenticated, loading } = useAuth();
@@ -736,15 +736,38 @@ export function ChatInterface() {
 
       <div className="flex flex-col gap-2 relative z-10">
         
-{/* Display current file attachments */}
+{/* Display current file attachments with persistence indicator */}
 {attachments.length > 0 && (
   <div className="bg-gray-800/80 rounded-lg p-2 mb-2">
-    <h4 className="text-sm text-gray-300 mb-2">Attached Files:</h4>
+    <div className="flex items-center justify-between mb-2">
+      <h4 className="text-sm text-gray-300">
+        Attached Files 
+        <span 
+          className="inline-flex items-center ml-2 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-900/60 text-blue-200" 
+          title="Files remain available throughout your entire conversation">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 mr-1">
+            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+          </svg>
+          persistent
+        </span>
+      </h4>
+      <button
+        onClick={clearAttachments}
+        className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center"
+        title="Remove all attachments"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+        </svg>
+        Clear all
+      </button>
+    </div>
     <div className="flex flex-wrap gap-2">
       {attachments.map(attachment => (
         <div 
           key={attachment.id} 
-          className="flex items-center bg-gray-700/70 text-gray-200 text-xs rounded-full px-3 py-1.5 gap-2"
+          className="flex items-center bg-gray-700/70 text-gray-200 text-xs rounded-full px-3 py-1.5 gap-2 group relative"
+          title={`Reference with #${attachment.id} in your message`}
         >
           <span className="truncate max-w-[150px]">{attachment.name}</span>
           <span className="text-gray-400">(#{attachment.id})</span>
