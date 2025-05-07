@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useChat } from "@/hooks/useChat";
 import { Message } from "./Message";
 import { createWorker } from 'tesseract.js';
@@ -39,6 +39,7 @@ export function ChatInterface() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [recognizedText, setRecognizedText] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('pol+eng');
+  const [file, setFile] = useState<File | null>(null);
 
   const handleCameraClick = async () => {
     setPhoto(null);
@@ -134,15 +135,71 @@ export function ChatInterface() {
     }
   };
 
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0] || null;
+    if (!selectedFile) return;
+    
+    // Only process text files
+    if (!selectedFile.type.includes('text/') && !selectedFile.name.endsWith('.txt')) {
+      alert('Please select a text file (.txt)');
+      return;
+    }
+
+    setIsProcessingFile(true);
+    
+    try {
+      // Read the file content
+      const content = await readFileAsText(selectedFile);
+      
+      // Generate unique ID for the attachment
+      const id = selectedFile.name.replace(/\.\w+$/, '').replace(/\s+/g, '_').toLowerCase();
+      
+      // Add file as attachment
+      addAttachment({
+        id,
+        name: selectedFile.name,
+        content,
+        type: 'text/plain'
+      });
+      
+      // Notify user
+      alert(`File "${selectedFile.name}" attached. You can reference it with #${id} in your message.`);
+      
+    } catch (error) {
+      console.error('Error reading file:', error);
+      alert('Failed to read file. Please try again.');
+    } finally {
+      setIsProcessingFile(false);
+      // Clear the file input
+      event.target.value = '';
+    }
+  };
+
+  // Helper function to read file contents
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result as string);
+        } else {
+          reject(new Error('Failed to read file'));
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  };
 
   const [message, setMessage] = useState("");
-  const { messages, sendMessage, isLoading } = useChat();
+  const { messages, sendMessage, isLoading, attachments, addAttachment, removeAttachment } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [userName, setUserName] = useState<string>("");
   const [showWelcome, setShowWelcome] = useState<boolean>(true);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
 
   // Get Google API credentials from environment variables
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
@@ -354,6 +411,33 @@ export function ChatInterface() {
 
       <div className="flex flex-col gap-2 relative z-10">
         
+{/* Display current file attachments */}
+{attachments.length > 0 && (
+  <div className="bg-gray-800/80 rounded-lg p-2 mb-2">
+    <h4 className="text-sm text-gray-300 mb-2">Attached Files:</h4>
+    <div className="flex flex-wrap gap-2">
+      {attachments.map(attachment => (
+        <div 
+          key={attachment.id} 
+          className="flex items-center bg-gray-700/70 text-gray-200 text-xs rounded-full px-3 py-1.5 gap-2"
+        >
+          <span className="truncate max-w-[150px]">{attachment.name}</span>
+          <span className="text-gray-400">(#{attachment.id})</span>
+          <button
+            onClick={() => removeAttachment(attachment.id)}
+            className="text-gray-400 hover:text-red-400"
+            aria-label="Remove attachment"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 {showCamera && (
   <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/80 p-2 sm:relative sm:bg-transparent sm:p-0">
     {/* Przycisk powrotu (X) tylko na mobile */}
@@ -487,6 +571,20 @@ export function ChatInterface() {
   >
     Send
   </button>
+  {/* Przycisk do dodawania pliku */}
+  <label
+    htmlFor="file-input"
+    className="px-3 sm:px-6 py-2 sm:py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 cursor-pointer"
+    style={{ minWidth: 48 }}
+  >
+    <input
+      id="file-input"
+      type="file"
+      onChange={handleFileChange}
+      className="hidden"
+    />
+    Attach
+  </label>
 </form>
       </div>
     </div>

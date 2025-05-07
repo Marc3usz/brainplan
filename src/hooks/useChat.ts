@@ -7,10 +7,18 @@ interface Message {
   content: string;
 }
 
+interface FileAttachment {
+  id: string;
+  name: string;
+  content: string;
+  type: string;
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const { data: session } = useSession();
 
   // Get Firebase auth token when component mounts
@@ -37,10 +45,54 @@ export function useChat() {
     return () => clearInterval(intervalId);
   }, []);
 
+  const addAttachment = (attachment: FileAttachment) => {
+    setAttachments(prev => [...prev, attachment]);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(attachment => attachment.id !== id));
+  };
+
+  const clearAttachments = () => {
+    setAttachments([]);
+  };
+
   const sendMessage = async (content: string) => {
     setIsLoading(true);
 
-    // Add user message to chat
+    // Process the message content to inject file attachments
+    let enhancedContent = content;
+    
+    // Check if message contains attachment references like #1, #file1, etc.
+    const attachmentReferences = content.match(/#(\w+)/g);
+    const referencedAttachments: FileAttachment[] = [];
+    
+    if (attachmentReferences && attachmentReferences.length > 0) {
+      // Process specific attachment references
+      attachmentReferences.forEach(ref => {
+        const attachmentId = ref.substring(1); // Remove the # symbol
+        const attachment = attachments.find(att => att.id === attachmentId);
+        if (attachment) {
+          referencedAttachments.push(attachment);
+        }
+      });
+    }
+    
+    // If there are no specific references but there are attachments, include all attachments
+    if (referencedAttachments.length === 0 && attachments.length > 0) {
+      referencedAttachments.push(...attachments);
+    }
+    
+    // Add attachment contents to the enhanced message
+    if (referencedAttachments.length > 0) {
+      enhancedContent = `${content}\n\n`;
+      
+      referencedAttachments.forEach(attachment => {
+        enhancedContent += `<attachment>\n${attachment.content}\n</attachment>\n\n`;
+      });
+    }
+
+    // Add user message to chat (using the original content to display to the user)
     const userMessage: Message = { role: "user", content };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
@@ -60,7 +112,7 @@ export function useChat() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          message: content,
+          message: enhancedContent, // Send the enhanced content with attachments
           history: messages,
         }),
       });
@@ -103,6 +155,8 @@ export function useChat() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      // Clear attachments after sending
+      clearAttachments();
     }
   };
 
@@ -110,5 +164,9 @@ export function useChat() {
     messages,
     sendMessage,
     isLoading,
+    attachments,
+    addAttachment,
+    removeAttachment,
+    clearAttachments,
   };
 }
