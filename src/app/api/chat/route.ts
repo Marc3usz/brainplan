@@ -50,15 +50,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ response }, { headers: corsHeaders });
     } catch (error) {
       console.error("Error generating response:", error);
+      
+      // Check for connection-related errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("EOF") || 
+          errorMessage.includes("connection") || 
+          errorMessage.includes("ECONNREFUSED")) {
+        return NextResponse.json(
+          { 
+            error: "Failed to connect to the Ollama server", 
+            details: errorMessage,
+            solution: "Please ensure the Ollama service is running on your local machine"
+          },
+          { status: 503, headers: corsHeaders }
+        );
+      }
+      
       return NextResponse.json(
-        { error: "Failed to generate response" },
+        { 
+          error: "Failed to generate response",
+          details: errorMessage 
+        },
         { status: 500, headers: corsHeaders }
       );
     }
   } catch (error) {
     console.error("Error in chat API:", error);
     return NextResponse.json(
-      { error: "Failed to process request" },
+      { 
+        error: "Failed to process request",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500, headers: corsHeaders }
     );
   }

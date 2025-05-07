@@ -14,6 +14,12 @@ interface FileAttachment {
   type: string;
 }
 
+interface ErrorResponse {
+  error: string;
+  details?: string;
+  solution?: string;
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -118,8 +124,36 @@ export function useChat() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        const errorData: ErrorResponse = await response.json().catch(() => ({}));
+        
+        // Format a helpful error message
+        let errorMessage = "Sorry, there was an error processing your message.";
+        
+        if (errorData.error) {
+          errorMessage = `Error: ${errorData.error}`;
+          
+          // Add details if available
+          if (errorData.details) {
+            errorMessage += `\n\nDetails: ${errorData.details}`;
+          }
+          
+          // Add solution if available
+          if (errorData.solution) {
+            errorMessage += `\n\nSolution: ${errorData.solution}`;
+          }
+          
+          // Specific help for Ollama connection issues
+          if (errorData.error.includes("Ollama") || 
+              (errorData.details && errorData.details.includes("EOF"))) {
+            errorMessage += "\n\nTroubleshooting steps:\n" +
+              "1. Make sure the Ollama application is running on your computer\n" +
+              "2. Check that your model is correctly installed in Ollama\n" +
+              "3. Ensure no firewall is blocking the connection\n" +
+              "4. Try restarting the Ollama application";
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -150,7 +184,8 @@ export function useChat() {
       // Add error message to chat
       const errorMessage: Message = {
         role: "assistant",
-        content: "Sorry, there was an error processing your message.",
+        content: error instanceof Error ? error.message : 
+          "Sorry, there was an unexpected error processing your message.",
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
