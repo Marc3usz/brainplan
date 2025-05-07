@@ -1,14 +1,23 @@
 import { Message as OllamaMessage } from "ollama";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useMemo } from "react";
+
+interface FileAttachment {
+  id: string;
+  name: string;
+  content: string;
+  type: string;
+}
 
 interface MessageProps {
   role: OllamaMessage["role"];
   content: string;
   isLoading?: boolean;
+  attachments?: FileAttachment[]; // Add attachments prop
 }
 
-export function Message({ role, content, isLoading }: MessageProps) {
+export function Message({ role, content, isLoading, attachments = [] }: MessageProps) {
   const isUser = role === "user";
 
   let thinking: string | null = null;
@@ -19,6 +28,31 @@ export function Message({ role, content, isLoading }: MessageProps) {
     thinking = parts[0]?.replace("<think>", "").trim() || null;
     response = parts.slice(1).join("</think>").trim();
   }
+  
+  // Format file references in messages, but only for existing attachments
+  const formattedContent = useMemo(() => {
+    if (!attachments || attachments.length === 0) {
+      return response; // No formatting if no attachments
+    }
+    
+    // Match patterns like #file_id or #some_document
+    const regex = /#([a-zA-Z0-9_-]+)/g;
+    return response.replace(regex, (match) => {
+      // Extract the ID without the # symbol
+      const id = match.substring(1);
+      
+      // Check if this ID exists in the attachments array
+      const attachmentExists = attachments.some(attachment => attachment.id === id);
+      
+      if (attachmentExists) {
+        // Apply special formatting for valid references
+        return `<span class="inline-block px-1.5 py-0.5 mx-0.5 bg-blue-800/40 text-blue-200 border border-blue-700/50 rounded font-medium">${match}</span>`;
+      } else {
+        // Return the original text for invalid references
+        return match;
+      }
+    });
+  }, [response, attachments]);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-2 sm:mb-3`}>
@@ -43,7 +77,12 @@ export function Message({ role, content, isLoading }: MessageProps) {
                 </ReactMarkdown>
               </div>
             )}
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{response}</ReactMarkdown>
+            {/* Use dangerouslySetInnerHTML for the formatted content with file references */}
+            {formattedContent.includes('<span class="inline-block') ? (
+              <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+            ) : (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{response}</ReactMarkdown>
+            )}
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { useState, useEffect, useRef, ChangeEvent, useMemo } from "react";
 import { useChat } from "@/hooks/useChat";
 import { Message } from "./Message";
 import { createWorker } from 'tesseract.js';
@@ -683,7 +683,11 @@ export function ChatInterface() {
           .filter((msg) => msg.role !== "tool")
           .map((msg, index) => (
             <div key={index} className="relative group">
-              <Message role={msg.role} content={msg.content} />
+              <Message 
+                role={msg.role} 
+                content={msg.content} 
+                attachments={attachments} 
+              />
               {msg.role === "assistant" && (
                 <div className="absolute -bottom-2 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <button 
@@ -746,7 +750,7 @@ export function ChatInterface() {
           className="inline-flex items-center ml-2 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-900/60 text-blue-200" 
           title="Files remain available throughout your entire conversation">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 mr-1">
-            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
           persistent
         </span>
@@ -887,12 +891,12 @@ export function ChatInterface() {
 
         {/* RESPONSYWNY FORMULARZ z przyciskiem toggle aparatu */}
 <form onSubmit={handleSubmit} className="flex gap-1 sm:gap-2 w-full max-w-3xl mx-auto my-2 px-4">
-  <input
-    type="text"
+  <FormattedInput
     value={message}
     onChange={(e) => setMessage(e.target.value)}
     placeholder="Wpisz swoją wiadomość..."
-    className="flex-1 p-2 sm:p-3 text-sm sm:text-base bg-gray-800 border border-gray-700 rounded-full text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+    className="flex-1"
+    attachments={attachments}
   />
   {/* Microphone button */}
   <button
@@ -959,6 +963,69 @@ export function ChatInterface() {
     </div>
   );
 }
+
+// Custom input component with formatting for file references
+const FormattedInput = ({ 
+  value, 
+  onChange, 
+  placeholder, 
+  className,
+  attachments = [] 
+}: { 
+  value: string; 
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; 
+  placeholder: string; 
+  className: string;
+  attachments?: { id: string; name: string; content: string; type: string; }[];
+}) => {
+  // Create a formatted display version with highlighted file references
+  const formattedDisplay = useMemo(() => {
+    if (!value) return '';
+    
+    // Replace #file_id patterns with styled spans, but only for existing attachments
+    return value.replace(
+      /#([a-zA-Z0-9_-]+)/g, 
+      (match, id) => {
+        // Check if the attachment exists
+        const attachmentExists = attachments.some(attachment => attachment.id === id);
+        
+        if (attachmentExists) {
+          return `<span class="inline-flex items-center px-1.5 py-0.5 mx-0.5 bg-blue-800/70 text-blue-100 border border-blue-600/70 rounded font-medium shadow-sm">${match}</span>`;
+        } else {
+          return match; // Keep as plain text if attachment doesn't exist
+        }
+      }
+    );
+  }, [value, attachments]);
+
+  return (
+    <div className={`relative flex-1 ${className}`}>
+      {/* Hidden actual input field (this is what gets submitted) */}
+      <input
+        type="text"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-text"
+        aria-label="Message input"
+      />
+      
+      {/* Visible styled display */}
+      <div 
+        className="flex-1 p-2 sm:p-3 text-sm sm:text-base bg-gray-800 border border-gray-700 rounded-full text-gray-100 placeholder-gray-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent overflow-hidden whitespace-nowrap overflow-ellipsis"
+      >
+        {formattedDisplay ? (
+          <div 
+            dangerouslySetInnerHTML={{ __html: formattedDisplay }} 
+            className="overflow-hidden whitespace-nowrap overflow-ellipsis"
+          />
+        ) : (
+          <span className="text-gray-500">{placeholder}</span>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // Add TypeScript types for the Google API
 declare global {
