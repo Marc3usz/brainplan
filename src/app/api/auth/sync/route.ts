@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { syncUserToMongoDB } from '@/services/userService';
 import { auth } from '@/lib/firebase-admin';
+import connectDB from '@/lib/mongodb';
 
 export async function POST(request: Request) {
   try {
+    // Ensure MongoDB connection is established
+    await connectDB();
+    
     // Verify the Firebase token
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -47,6 +51,9 @@ export async function POST(request: Request) {
       const decodedToken = await auth.verifyIdToken(token);
       const { uid, email, name, picture } = decodedToken;
       
+      // Log successful token verification
+      console.log('Successfully verified Firebase token for:', email);
+      
       // Sync user to MongoDB
       const user = await syncUserToMongoDB({
         uid,
@@ -62,6 +69,7 @@ export async function POST(request: Request) {
           email: user.email,
           name: user.name,
           image: user.image,
+          firebaseUid: uid,
         }
       });
     } catch (error) {

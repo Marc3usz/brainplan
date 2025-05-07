@@ -1,4 +1,4 @@
-/* import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env');
@@ -6,10 +6,20 @@ if (!process.env.MONGODB_URI) {
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-let cached = global.mongoose;
+// Define the type for mongoose global instance
+declare global {
+  var mongoose: {
+    conn: mongoose.Connection | null;
+    promise: Promise<mongoose.Mongoose> | null;
+  } | undefined;
+}
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+// Use a default value if global.mongoose is undefined
+const cached = global.mongoose || { conn: null, promise: null };
+
+// Initialize global.mongoose if it doesn't exist
+if (!global.mongoose) {
+  global.mongoose = { conn: null, promise: null };
 }
 
 async function connectDB() {
@@ -28,7 +38,7 @@ async function connectDB() {
   }
 
   try {
-    cached.conn = await cached.promise;
+    cached.conn = (await cached.promise).connection;
   } catch (e) {
     cached.promise = null;
     throw e;
@@ -37,4 +47,4 @@ async function connectDB() {
   return cached.conn;
 }
 
-export default connectDB; */ 
+export default connectDB; 

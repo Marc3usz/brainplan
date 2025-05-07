@@ -17,6 +17,11 @@ const userSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  firebaseUid: {
+    type: String,
+    sparse: true,
+    index: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
