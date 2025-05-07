@@ -10,6 +10,10 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
 
+  // Get Google API credentials from environment variables
+  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -36,8 +40,8 @@ export function ChatInterface() {
       
       // Initialize the Google API client
       await window.gapi.client.init({
-        apiKey: 'YOUR_API_KEY', // Replace with your actual API key
-        clientId: 'YOUR_CLIENT_ID', // Replace with your actual client ID
+        apiKey: googleApiKey,
+        clientId: googleClientId,
         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
         scope: 'https://www.googleapis.com/auth/calendar.readonly',
       });
