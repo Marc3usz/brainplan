@@ -4,7 +4,11 @@ import { SessionProvider } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { initFirebaseAuth } from '@/lib/auth-helper';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+}
+
+export function Providers({ children }: ProvidersProps) {
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
 
   useEffect(() => {

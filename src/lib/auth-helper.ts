@@ -6,6 +6,43 @@ import {
   getAdditionalUserInfo
 } from 'firebase/auth';
 
+// Function to sync user with MongoDB
+async function syncUserWithMongoDB(user: any) {
+  if (!user || !user.email) return;
+  
+  try {
+    // Get the ID token
+    const idToken = await user.getIdToken(true);
+    
+    // Prepare user data for the request body
+    const userData = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+    };
+    
+    // Call our API endpoint to sync the user
+    const response = await fetch('/api/auth/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify(userData)
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      console.error('Failed to sync user:', data.error);
+    } else {
+      console.log('User successfully synced with MongoDB');
+    }
+  } catch (error) {
+    console.error('Error syncing user with MongoDB:', error);
+  }
+}
+
 // Sign in with Google using Firebase
 export const signInWithGoogle = async () => {
   try {
@@ -27,6 +64,9 @@ export const signInWithGoogle = async () => {
       
       // Set a cookie for server-side auth detection
       document.cookie = `Firebase-Auth-Token=${user.uid}; path=/; max-age=${60*60*24*7}; SameSite=Lax`;
+      
+      // Sync user with MongoDB
+      await syncUserWithMongoDB(user);
     }
     
     return { success: true, user };
@@ -66,7 +106,7 @@ export const initFirebaseAuth = (callback: (user: any) => void) => {
   }
   
   // Listen for auth state changes
-  return onAuthStateChanged(auth, (user) => {
+  return onAuthStateChanged(auth, async (user) => {
     if (user) {
       const serializedUser = {
         uid: user.uid,
@@ -75,6 +115,9 @@ export const initFirebaseAuth = (callback: (user: any) => void) => {
         photoURL: user.photoURL,
       };
       localStorage.setItem('firebaseUser', JSON.stringify(serializedUser));
+      
+      // Sync user with MongoDB on auth state change
+      await syncUserWithMongoDB(user);
     } else {
       localStorage.removeItem('firebaseUser');
     }
