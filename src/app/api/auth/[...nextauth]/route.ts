@@ -1,45 +1,102 @@
-import NextAuth from 'next-auth';
+import NextAuth, { AuthOptions, Session, User as NextAuthUser } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { MongoDBAdapter } from '@auth/mongodb-adapter';
 import clientPromise from '@/lib/mongodb-adapter';
 import User from '@/models/User';
 import connectDB from '@/lib/mongodb';
 import bcrypt from 'bcryptjs';
+import { auth } from '@/lib/firebase';
+import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 
-export const authOptions = {
+// Add id property to the Session User type
+interface ExtendedUser extends NextAuthUser {
+  id?: string;
+}
+
+interface ExtendedSession extends Session {
+  user?: ExtendedUser;
+}
+
+const authOptions: AuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        idToken: { label: "ID Token", type: "text" },
+        provider: { label: "Provider", type: "text" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please enter an email and password');
+        // Handle Firebase Google authentication
+        if (credentials?.idToken && credentials?.provider === 'google') {
+          try {
+            // Create credential from the token
+            const googleCredential = GoogleAuthProvider.credential(credentials.idToken);
+            
+            // Sign in to Firebase with credential
+            const userCredential = await signInWithCredential(auth, googleCredential);
+            const firebaseUser = userCredential.user;
+            
+            // Connect to MongoDB
+            await connectDB();
+            
+            // Check if user exists in our DB
+            let user = await User.findOne({ email: firebaseUser.email });
+            
+            // If not, create a new user
+            if (!user) {
+              user = await User.create({
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                email: firebaseUser.email,
+                password: await bcrypt.hash(Math.random().toString(36).slice(-8), 10),
+                image: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || 'User')}&background=random`,
+              });
+            }
+            
+            return {
+              id: user._id.toString(),
+              email: user.email,
+              name: user.name,
+              image: user.image || firebaseUser.photoURL,
+            };
+          } catch (error) {
+            console.error("Firebase auth error:", error);
+            throw new Error('Authentication failed');
+          }
         }
+        
+        // Regular credentials authentication
+        if (credentials?.email && credentials?.password) {
+          await connectDB();
 
-        await connectDB();
+          const user = await User.findOne({ email: credentials.email });
 
-        const user = await User.findOne({ email: credentials.email });
+          if (!user) {
+            throw new Error('No user found with this email');
+          }
 
-        if (!user) {
-          throw new Error('No user found with this email');
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+
+          if (!isPasswordValid) {
+            throw new Error('Invalid password');
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          };
         }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          throw new Error('Invalid password');
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        };
+        
+        throw new Error('Invalid credentials');
       }
     })
   ],
@@ -50,11 +107,14 @@ export const authOptions = {
     signIn: '/auth/signin',
   },
   callbacks: {
-    async session({ session, token }) {
+    async session({ session, token }: { session: ExtendedSession; token: any }) {
       if (token && session.user) {
         session.user.id = token.sub;
       }
       return session;
+    },
+    async signIn({ account, profile }: { account: any; profile?: any }) {
+      return true;
     },
   },
 };
