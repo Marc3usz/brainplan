@@ -1,14 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithGoogle } from '@/lib/auth-helper';
 import Loader from './Loader';
 
-export default function GoogleSignInButton() {
+interface GoogleSignInButtonProps {
+  redirectUrl?: string;
+}
+
+export default function GoogleSignInButton({ redirectUrl }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Use redirectUrl prop or get from URL or default to home
+  const callbackUrl = redirectUrl || searchParams?.get('callbackUrl') || '/';
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -21,8 +29,8 @@ export default function GoogleSignInButton() {
       if (result.success) {
         console.log('Google sign in successful', result.user);
         
-        // Redirect to home page or dashboard
-        router.push('/dashboard');
+        // Redirect to a simple callback URL
+        router.push(callbackUrl);
         router.refresh();
       } else {
         setError('Failed to sign in with Google');

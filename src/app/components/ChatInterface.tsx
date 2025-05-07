@@ -3,16 +3,51 @@
 import { useState, useEffect, useRef } from "react";
 import { useChat } from "@/hooks/useChat";
 import { Message } from "./Message";
+import { useAuth } from "@/hooks/useAuth";
+import { auth } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
 
 export function ChatInterface() {
   const [message, setMessage] = useState("");
   const { messages, sendMessage, isLoading } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
 
   // Get Google API credentials from environment variables
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  useEffect(() => {
+    // If not authenticated and not loading, redirect to login
+    if (!loading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, loading, router]);
+
+  // Refresh Firebase token periodically
+  useEffect(() => {
+    const refreshToken = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await user.getIdToken(true);
+          console.log("Firebase token refreshed");
+        } catch (error) {
+          console.error("Error refreshing token:", error);
+        }
+      }
+    };
+
+    // Refresh token every 50 minutes (tokens last 60 min)
+    const intervalId = setInterval(refreshToken, 50 * 60 * 1000);
+    
+    // Initial token refresh
+    refreshToken();
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

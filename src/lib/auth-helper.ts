@@ -15,13 +15,18 @@ export const signInWithGoogle = async () => {
     
     // Save to localStorage for persistence
     if (user) {
-      localStorage.setItem('firebaseUser', JSON.stringify({
+      const userData = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
         isNewUser: additionalInfo?.isNewUser || false,
-      }));
+      };
+      
+      localStorage.setItem('firebaseUser', JSON.stringify(userData));
+      
+      // Set a cookie for server-side auth detection
+      document.cookie = `Firebase-Auth-Token=${user.uid}; path=/; max-age=${60*60*24*7}; SameSite=Lax`;
     }
     
     return { success: true, user };
@@ -36,6 +41,10 @@ export const signOutFromFirebase = async () => {
   try {
     await signOut(auth);
     localStorage.removeItem('firebaseUser');
+    
+    // Clear the auth cookie
+    document.cookie = 'Firebase-Auth-Token=; path=/; max-age=0; SameSite=Lax';
+    
     return { success: true };
   } catch (error) {
     console.error('Sign out error:', error);

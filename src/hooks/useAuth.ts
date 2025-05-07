@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
-export function useAuth({ required = false, redirectTo = '/auth/signin' } = {}) {
+export function useAuth({ required = false, redirectTo = '/login' } = {}) {
   const { data: session, status } = useSession();
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -32,8 +32,12 @@ export function useAuth({ required = false, redirectTo = '/auth/signin' } = {}) 
 
   useEffect(() => {
     // If auth is required and there's no user, redirect to login
-    if (required && !loading && !session?.user && !firebaseUser) {
-      router.push(`${redirectTo}?callbackUrl=${encodeURIComponent(window.location.href)}`);
+    // Check if we're not already on the login page to prevent loops
+    if (required && !loading && !session?.user && !firebaseUser && 
+        typeof window !== 'undefined' && 
+        !window.location.pathname.includes(redirectTo)) {
+      // Use a simple redirect without complex URL parameters
+      router.push(redirectTo);
     }
   }, [required, loading, session, firebaseUser, router, redirectTo]);
 
