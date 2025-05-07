@@ -1,12 +1,14 @@
-import NextAuth from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { MongoDBAdapter } from '@auth/mongodb-adapter';
 import clientPromise from '@/lib/mongodb-adapter';
 import User from '@/models/User';
 import connectDB from '@/lib/mongodb';
 import bcrypt from 'bcryptjs';
+import { Session } from 'next-auth';
+import { JWT } from 'next-auth/jwt';
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
@@ -50,7 +52,7 @@ export const authOptions = {
     signIn: '/auth/signin',
   },
   callbacks: {
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (token && session.user) {
         session.user.id = token.sub;
       }
