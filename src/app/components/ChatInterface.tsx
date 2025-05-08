@@ -895,13 +895,18 @@ export function ChatInterface() {
   className="flex items-center space-x-1 sm:space-x-3 bg-gray-900/80 backdrop-blur p-1.5 sm:p-3 rounded-xl border border-gray-700/80 max-w-3xl mx-auto w-full"
 >
   {/* Input */}
-  <FormattedInput
-    value={message}
-    onChange={(e) => setMessage(e.target.value)}
-    placeholder="Type your message..."
-    className="flex-1"
-    attachments={attachments}
-  />
+  <div className="flex-1 w-full">
+    <textarea
+      value={message}
+      onChange={(e) => setMessage(e.target.value)}
+      placeholder="Type your message..."
+      className="w-full text-gray-100 bg-transparent border-0 focus:ring-0 focus:border-0 min-h-[40px] sm:min-h-[48px] max-h-[120px] overflow-y-auto whitespace-pre-wrap p-2 sm:p-3 resize-none"
+      style={{
+        lineHeight: '1.5',
+        resize: 'none'
+      }}
+    />
+  </div>
   
   <div className="flex items-center space-x-1 sm:space-x-3">
     {/* Przycisk do nagrywania głosu */}
