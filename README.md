@@ -1,113 +1,96 @@
 # BrainPlan
 
-BrainPlan to nowoczesna aplikacja webowa oparta na Next.js, umożliwiająca interakcję z dużymi modelami językowymi (LLM) poprzez integrację z serwerem Ollama. Projekt pełni funkcję asystenta AI z dodatkowymi narzędziami, zarządzaniem użytkownikami oraz rozbudowanym panelem ustawień.
+BrainPlan is a modern web application built with Next.js, allowing interaction with large language models (LLM) through integration with an Ollama server. The project functions as an AI assistant with additional tools, user management, and an extensive settings panel.
 
 ---
 
-## ✨ Funkcjonalności
+## Features
 
-- **Asystent AI (Chat Assistant):**
-  - Bezpośrednia interakcja z modelem LLM (np. deepseek-r1:14b) poprzez przyjazny interfejs czatu
-  - Szybkie akcje (Quick Actions) na dashboardzie
-- **Panel użytkownika:**
-  - Przegląd i edycja profilu
-  - Zmiana hasła, e-maila, imienia
-  - Usuwanie konta z potwierdzeniem
-- **Bezpieczna autoryzacja:**
-  - Rejestracja i logowanie użytkowników przez Firebase Authentication
-  - Przechowywanie danych w MongoDB
-- **Responsywny i nowoczesny interfejs:**
-  - React 19, TailwindCSS, ikony, efekty hover, gridy
-- **Łatwa rozbudowa:**
-  - Struktura umożliwiająca dodawanie kolejnych narzędzi do asystenta
+### Chat Assistant
+- Direct interaction with LLM models (e.g., qwen3:14b) through a friendly chat interface
+- Quick actions from the dashboard
+
+### BrainRot Video Generator
+- Transform text content into engaging videos with Minecraft gameplay
+- Automatic voice narration and subtitles
+- Educational content optimized for social media
+
+### User Panel
+- Profile overview and editing
+- Password, email, and name changes
+- Account deletion with confirmation
+
+### Secure Authorization
+- User registration and login via Firebase Authentication
+- Data storage in MongoDB
+
+### Responsive and Modern Interface
+- React 19, TailwindCSS, icons, hover effects, grids
+
+### Easy Expansion
+- Structure allowing addition of more tools to the assistant
 
 ---
 
-## 🛠️ Technologie
+## Technologies
 
-- **Next.js** (z Turbopackiem)
+- **Next.js** (with Turbopack)
 - **TypeScript**
 - **React 19**
 - **TailwindCSS**
-- **Ollama** (lokalny serwer modeli LLM)
+- **Ollama** (local LLM server)
 - **Firebase Authentication**
 - **MongoDB**
+- **FFmpeg** (for video generation)
 
 ---
 
-## ⚡ Wymagania wstępne
+## Prerequisites
 
-- Node.js (zalecana wersja 18+)
+- Node.js (recommended version 18+)
 - npm
-- Zainstalowany i skonfigurowany serwer [Ollama](https://ollama.com/) (np. `ollama serve`)
-- Model LLM dostępny na serwerze Ollama (np. `deepseek-r1:14b`)
-- Dostęp do bazy MongoDB oraz kluczy Firebase (patrz `.env`)
+- Installed and configured [Ollama](https://ollama.com/) server (e.g., `ollama serve`)
+- LLM model available on the Ollama server (e.g., `qwen3:14b`)
+- Access to MongoDB database and Firebase keys (see `.env`)
 
 ---
 
-## 🚀 Instrukcja uruchomienia
+## Setup Instructions
 
-1. **Sklonuj repozytorium:**
+1. Clone the repository:
    ```bash
-   git clone <adres_repozytorium>
+   git clone <repository_address>
    cd brainplan
    ```
 
-2. **Zainstaluj zależności:**
+2. Copy `.env.example` to `.env` and populate required environment variables
+
+3. Install dependencies:
    ```bash
    npm install
    ```
 
-3. **Skonfiguruj plik `.env`:**
-   - Uzupełnij wymagane zmienne środowiskowe do MongoDB i Firebase (patrz przykładowy plik `.env.example` jeśli jest dostępny)
-
-
-4. **Uruchom aplikację Next.js:**
+4. Run the development server:
    ```bash
    npm run dev
    ```
 
-5. **Otwórz aplikację w przeglądarce:**
-   - Domyślnie pod adresem: [http://localhost:3000](http://localhost:3000)
+5. Open [http://localhost:3000](http://localhost:3000) in your browser for the chat interface
+   or [http://localhost:3000/brainrot](http://localhost:3000/brainrot) for the BrainRot Video Generator
 
 ---
 
-## 📁 Struktura projektu (wybrane elementy)
+## Project Structure
 
-- `/src/app/components/` — komponenty React (czat, nagłówek, dashboard, itp.)
-- `/src/services/ollama.ts` — integracja z serwerem Ollama
-- `/pages/api/user/` — endpointy API do zarządzania użytkownikami
-
----
-
-## ℹ️ Informacje dodatkowe
-
-- **Licencja:** MIT
-- **Autor:** Marc3usz
-- **Kontakt:** [Twój e-mail lub link do profilu]
+- `/src/app/` — Next.js app directory
+- `/src/app/components/` — React components (chat, header, dashboard, etc.)
+- `/src/app/brainrot/` — BrainRot Video Generator page
+- `/src/services/ollama.ts` — Integration with Ollama server
+- `/src/ollama/tools/` — AI assistant tools and functions
 
 ---
 
-### Notatki
-- Przed uruchomieniem upewnij się, że serwer Ollama działa i wybrany model jest dostępny.
-- Jeśli pojawi się błąd 505 (internal error), sprawdź czy model jest poprawnie ustawiony w pliku `src/services/ollama.ts` oraz czy serwer Ollama jest aktywny.
-- Projekt jest łatwy do rozbudowy o własne narzędzia i funkcje asystenta AI.
-
-
-1.  Copy `.env.example` to `.env`
-2.  Install dependencies:
-
-    ```bash
-    npm install
-    ```
-3.  Run the development server:
-
-    ```bash
-    npm run dev
-    ```
-4.  Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-# Creating New Tools
+## Creating New Tools
 
 To create a new tool, follow these steps:
 
@@ -147,3 +130,17 @@ The tool will be automatically available to the AI assistant. Make sure to:
 - Handle errors appropriately in the execute function
 - Return a properly typed response
 - Keep the implementation simple and focused
+
+---
+
+## Additional Information
+
+- **License:** MIT
+- **Author:** Marc3usz
+
+---
+
+### Notes
+- Before running, make sure the Ollama server is working and the selected model is available
+- If a 505 (internal error) appears, check if the model is correctly set in the `src/services/ollama.ts` file and if the Ollama server is active
+- The project is easy to extend with your own tools and AI assistant functions

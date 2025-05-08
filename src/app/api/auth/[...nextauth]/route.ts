@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs';
 import { auth } from '@/lib/firebase';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 
-// Rozszerzone typy dla NextAuth
+// Extended types for NextAuth
 interface ExtendedUser extends Omit<NextAuthUser, 'id'> {
   id?: string;
 }
@@ -19,7 +19,7 @@ interface ExtendedSession extends Omit<Session, 'user'> {
   accessToken?: string;
 }
 
-const authOptions: AuthOptions = {
+export const authOptions: AuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
@@ -112,7 +112,7 @@ const authOptions: AuthOptions = {
       if (token && session.user) {
         session.user.id = token.sub;
         
-        // Zapisz token dostępu do sesji, jeśli istnieje
+        // Save access token to session if it exists
         if (token.accessToken) {
           session.accessToken = token.accessToken;
         }
@@ -120,17 +120,17 @@ const authOptions: AuthOptions = {
       return session;
     },
     async jwt({ token, account }: { token: any; account: any }) {
-      // Zachowaj token dostępu, gdy użytkownik się loguje
+      // Keep access token when user logs in
       if (account?.access_token) {
         token.accessToken = account.access_token;
       }
       return token;
     },
     async signIn({ account, profile }: { account: any; profile?: any }) {
-      // Jeśli mamy token dostępu, zapisz go w sessionStorage (po stronie klienta)
+      // If we have an access token, save it to sessionStorage (client-side)
       if (typeof window !== 'undefined' && account?.access_token) {
         sessionStorage.setItem('accessToken', account.access_token);
-        console.log("✅ Zapisano NextAuth Google Access Token do sessionStorage");
+        console.log("✅ Saved NextAuth Google Access Token to sessionStorage");
       }
       return true;
     },
@@ -139,4 +139,4 @@ const authOptions: AuthOptions = {
 
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST }; 
+export { handler as GET, handler as POST };

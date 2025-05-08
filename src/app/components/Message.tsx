@@ -63,6 +63,9 @@ export function Message({ role, content, isLoading, attachments = [] }: MessageP
             : "bg-gray-900 rounded-r-xl sm:rounded-r-2xl rounded-bl-xl sm:rounded-bl-2xl border border-gray-800"
         } max-w-[85%] sm:max-w-[75%] md:max-w-[65%] text-xs sm:text-sm md:text-base shadow-md`}
       >
+        <p className="text-sm font-semibold mb-1 text-gray-300">
+          {isUser ? "You" : "Assistant"}
+        </p>
         {isLoading ? (
           <div className="animate-pulse">
             <p className="text-gray-100">Processing...</p>

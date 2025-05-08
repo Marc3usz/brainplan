@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LLM Chat",
-  description: "LLM Chat",
+  title: "BrainPlan",
+  description: "Chat interface with BrainRot Video Generator",
 };
 
 export default function RootLayout({
