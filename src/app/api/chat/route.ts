@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { generateResponse } from "@/services/ollama";
 import { getToken } from 'next-auth/jwt';
 import { auth } from '@/lib/firebase';
+import { cookies } from 'next/headers';
 
 // Configure CORS headers for the API route
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Calendar-Token',
 };
 
 // Handle OPTIONS requests for CORS preflight
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
     // This needs to check for cookies that indicate Firebase authentication
     const authHeader = request.headers.get('authorization');
     const firebaseToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    
+    // Get calendar access token from header if available
+    const calendarToken = request.headers.get('x-calendar-token');
     
     // Allow the request if either NextAuth token or Firebase token exists
     const isAuthenticated = !!token || !!firebaseToken;
@@ -46,7 +50,8 @@ export async function POST(request: Request) {
     }
 
     try {
-      const response = await generateResponse(message, history);
+      // Pass calendar token to generateResponse function
+      const response = await generateResponse(message, history, 0, { calendarToken });
       return NextResponse.json({ response }, { headers: corsHeaders });
     } catch (error) {
       console.error("Error generating response:", error);

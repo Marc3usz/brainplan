@@ -24,10 +24,11 @@ export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [calendarToken, setCalendarToken] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const { data: session } = useSession();
 
-  // Get Firebase auth token when component mounts
+  // Get Firebase auth token and Google Calendar token when component mounts
   useEffect(() => {
     const getFirebaseToken = async () => {
       try {
@@ -41,14 +42,44 @@ export function useChat() {
       }
     };
 
+    const getCalendarToken = () => {
+      try {
+        if (typeof window !== "undefined") {
+          const token = sessionStorage.getItem("accessToken");
+          if (token) {
+            setCalendarToken(token);
+          }
+        }
+      } catch (error) {
+        console.error("Error getting Calendar token:", error);
+      }
+    };
+
     getFirebaseToken();
+    getCalendarToken();
     
     // Set up token refresh
     const intervalId = setInterval(() => {
       getFirebaseToken();
-    }, 30 * 60 * 1000); // Refresh every 30 minutes
+    }, 30 * 60 * 1000); // Refresh Firebase token every 30 minutes
     
-    return () => clearInterval(intervalId);
+    // Setup event listener for calendar token changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "accessToken") {
+        setCalendarToken(e.newValue);
+      }
+    };
+    
+    if (typeof window !== "undefined") {
+      window.addEventListener('storage', handleStorageChange);
+    }
+    
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== "undefined") {
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }, []);
 
   const addAttachment = (attachment: FileAttachment) => {
@@ -112,6 +143,11 @@ export function useChat() {
       // Add Firebase token if available
       if (authToken) {
         headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
+      // Add Calendar token if available
+      if (calendarToken) {
+        headers["X-Calendar-Token"] = calendarToken;
       }
 
       const response = await fetch("/api/chat", {
@@ -201,5 +237,6 @@ export function useChat() {
     addAttachment,
     removeAttachment,
     clearAttachments,
+    calendarConnected: !!calendarToken
   };
 }

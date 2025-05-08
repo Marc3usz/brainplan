@@ -21,6 +21,8 @@ const SYSTEM_PROMPT = `
   IMPORTANT: Whenever a user message contains a URL/link, you MUST call the scraperLink tool with the URL to process it. This is critical.
   Always look for URLs in user messages and process them using the scraperLink tool.
 
+  IMPORTANT: If the user asks about their calendar events, schedule, or meetings, use the getCalendar tool to fetch and display their Google Calendar events. The getCalendar tool is already configured with the user's Google Calendar access token - you don't need to ask for any parameters.
+
   IMPORTANT: For user notes functionality, use the following tools:
   - Use getAllNotes to retrieve all notes from the user's index (no parameters needed)
   - Use addNoteToIndex to add a new note title to the index (just provide the noteTitle)
@@ -58,8 +60,14 @@ interface ToolCall {
   };
 }
 
+interface ToolContext {
+  calendarToken?: string;
+  [key: string]: any;
+}
+
 async function handleToolCalls(
-  toolCalls: unknown[]
+  toolCalls: unknown[],
+  context?: ToolContext
 ): Promise<Record<string, unknown>> {
   const tools = getTools();
   const results: Record<string, unknown> = {};
@@ -72,7 +80,36 @@ async function handleToolCalls(
     }
 
     try {
-      const args = call.function.arguments;
+      let args = call.function.arguments;
+      
+      // For calendar tool, inject the calendar token
+      if (call.function.name === "getCalendar" && context?.calendarToken) {
+        try {
+          // If args is valid JSON, parse it, add token, stringify it back
+          let argsObj = {};
+          try {
+            if (args && args.trim()) {
+              argsObj = JSON.parse(args);
+            }
+          } catch (e) {
+            // If not valid JSON, create a new object
+            argsObj = {};
+          }
+          
+          // Add the calendar token
+          argsObj = {
+            ...argsObj,
+            accessToken: context.calendarToken
+          };
+          
+          // Stringify it back
+          args = JSON.stringify(argsObj);
+        } catch (e) {
+          console.error("Error adding calendar token to args:", e);
+        }
+      }
+      
+      // Execute the tool with the modified arguments
       const result = await tool.execute(args);
       results[call.function.name] = result;
     } catch (error) {
@@ -91,7 +128,8 @@ async function handleToolCalls(
 export async function generateResponse(
   message: string,
   history: Message[] = [],
-  recursionCount: number = 0
+  recursionCount: number = 0,
+  context?: ToolContext
 ): Promise<{ messages: Message[] }> {
   if (recursionCount > TOOLS_RECURSION_LIMIT) {
     return {
@@ -177,7 +215,7 @@ export async function generateResponse(
       };
     }
 
-    const toolResults = await handleToolCalls(response.message.tool_calls);
+    const toolResults = await handleToolCalls(response.message.tool_calls, context);
 
     // Add tool responses to message history
     const toolMessages: Message[] = [];
@@ -191,7 +229,8 @@ export async function generateResponse(
     const nextResponse = await generateResponse(
       message,
       [...messages, ...toolMessages],
-      recursionCount + 1
+      recursionCount + 1,
+      context
     );
     return {
       messages: [...toolMessages, ...nextResponse.messages],
