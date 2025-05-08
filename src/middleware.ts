@@ -18,14 +18,31 @@ export async function middleware(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const firebaseToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
   
-  // Check for user auth in cookies (Firebase persistence)
-  const hasFirebaseCookie = request.cookies.has('Firebase-Auth-Token');
+  // Check for user auth in cookies - Firebase may use different cookie names
+  // Common Firebase cookie names to check
+  const firebaseCookies = [
+    'Firebase-Auth-Token',
+    'firebase-auth-token',
+    'firebase-token',
+    'firebaseToken',
+    'firebaseauth',
+    '__session'  // Firebase often uses this for auth sessions
+  ];
   
-  const isAuthenticated = !!token || !!firebaseToken || hasFirebaseCookie;
+  const hasFirebaseCookie = firebaseCookies.some(cookieName => request.cookies.has(cookieName));
+  
+  // Also check if we have any cookie containing 'firebase' case insensitive
+  const allCookieNames = request.cookies.getAll().map(c => c.name);
+  const hasAnyFirebaseCookie = allCookieNames.some(name => 
+    name.toLowerCase().includes('firebase') || name.toLowerCase().includes('auth')
+  );
+  
+  const isAuthenticated = !!token || !!firebaseToken || hasFirebaseCookie || hasAnyFirebaseCookie;
   const path = request.nextUrl.pathname;
   
   // Debug logs
-  console.log(`Middleware: Path=${path}, Authenticated=${isAuthenticated}, Token=${!!token}, FirebaseToken=${!!firebaseToken}`);
+  console.log(`Middleware: Path=${path}, Authenticated=${isAuthenticated}, Token=${!!token}, FirebaseToken=${!!firebaseToken}, HasFirebaseCookie=${hasFirebaseCookie}, HasAnyFirebaseCookie=${hasAnyFirebaseCookie}`);
+  console.log('All cookies:', allCookieNames.join(', '));
   
   // Check for protected API routes
   if (protectedApiRoutes.some(route => path.startsWith(route))) {
@@ -41,7 +58,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect from auth pages if already logged in
   if (isAuthenticated && authRoutes.some(route => path.startsWith(route))) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
   
   // Only redirect to login for specific protected routes
@@ -70,4 +87,4 @@ export const config = {
     '/login',
     '/api/chat'
   ]
-}; 
+};

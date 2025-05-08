@@ -76,10 +76,21 @@ export default function Calendar({ accessToken }: CalendarProps) {
     }
   };
   
-  // Load events only once on initial render
+  // Load events when month changes or accessToken becomes available
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    if (accessToken) {
+      fetchEvents();
+    }
+  }, [currentDate, accessToken]);
+
+  // Clear error when accessToken changes
+  useEffect(() => {
+    if (accessToken) {
+      setError('');
+    } else {
+      setError('No access token available. Please sign in to view your calendar.');
+    }
+  }, [accessToken]);
 
   // Check if a date has events
   const getEventsForDate = (date: Date) => {
@@ -112,7 +123,7 @@ export default function Calendar({ accessToken }: CalendarProps) {
             className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             aria-label="Previous month"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -121,7 +132,7 @@ export default function Calendar({ accessToken }: CalendarProps) {
             className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
             aria-label="Next month"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -129,7 +140,7 @@ export default function Calendar({ accessToken }: CalendarProps) {
             onClick={fetchEvents}
             className="p-2 rounded bg-blue-500 hover:bg-blue-600 text-white flex items-center"
             aria-label="Refresh calendar"
-            disabled={loading}
+            disabled={loading || !accessToken}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -218,4 +229,4 @@ export default function Calendar({ accessToken }: CalendarProps) {
       </div>
     </div>
   );
-} 
+}
