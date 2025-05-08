@@ -30,6 +30,15 @@ const SYSTEM_PROMPT = `
   - Use addNotesIndexField to add a custom field and value to the index
   - Use meaningful titles for indexes, like "business plan for health tracking app", avoid file names as they can change. Make sure the index title helps you recall basic information about the note.
   - You may use notes to store information between sessions, like habits, goals, and other relevant data. This is important for the user to keep track of their progress and for you to provide better assistance.
+
+  IMPORTANT: For working with note content, use these tools:
+  - Use writeNote to create a new note or update an existing note (provide title and content)
+  - Use readNote to retrieve the full content of a note by its title
+  - Use searchNotes to find notes containing specific text in their title or content
+  
+  When a user asks you to create, save, or write a note, use the writeNote tool.
+  When a user asks to read, show, or view a note, use the readNote tool.
+  When a user asks to find notes about a specific topic, use the searchNotes tool.
 ` as const;
 
 // Initialize Ollama client
