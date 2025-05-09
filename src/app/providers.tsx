@@ -13,11 +13,26 @@ export function Providers({ children }: ProvidersProps) {
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
 
   useEffect(() => {
-    // Initialize Firebase auth state
-    const unsubscribe = initFirebaseAuth(async (user) => {
+    // Inicjalizacja stanu uwierzytelniania Firebase
+    const unsubscribe = initFirebaseAuth((user) => {
       console.log('Firebase auth state changed:', user ? 'Signed in' : 'Signed out');
       
-      // Jeśli użytkownik jest zalogowany, spróbuj uzyskać token dostępu
+      // Zapisz stan logowania w localStorage dla lepszej persystencji
+      if (user) {
+        try {
+          localStorage.setItem('isAuthenticated', 'true');
+        } catch (error) {
+          console.error('Error saving auth state to localStorage', error);
+        }
+      } else {
+        try {
+          localStorage.removeItem('isAuthenticated');
+        } catch (error) {
+          console.error('Error removing auth state from localStorage', error);
+        }
+      }
+      
+      // Jeśli użytkownik jest zalogowany, sprawdź dostępność tokena OAuth
       if (user) {
         try {
           const auth = getAuth();
@@ -31,23 +46,13 @@ export function Providers({ children }: ProvidersProps) {
             );
             
             if (isGoogleProvider) {
-              // Sprawdź, czy w sessionStorage już jest token
+              // Sprawdź token dostępu w sessionStorage
               const existingToken = sessionStorage.getItem('accessToken');
-              
-              // Sprawdź, czy istniejący token jest już tokenem OAuth2
-              if (existingToken && existingToken.startsWith('ya29')) {
-                console.log('✅ Token OAuth2 już istnieje w sessionStorage, nie nadpisuję');
-              } else {
-                // Sprawdź, czy możemy uzyskać token OAuth2 bezpośrednio z Firebase
-                // Niestety, Firebase Auth nie daje nam bezpośredniego dostępu do OAuth2 token po inicjalizacji
-                // Dlatego lepiej korzystać z tokenu uzyskanego przy logowaniu w signInWithGoogle
-                console.log('⚠️ Istniejący token nie jest tokenem OAuth2 lub nie istnieje');
-                console.log('ℹ️ Należy zalogować się ponownie, aby uzyskać prawidłowy token OAuth2');
-              }
+              console.log('Google provider detected, token available:', !!existingToken);
             }
           }
         } catch (error) {
-          console.error('Błąd podczas uzyskiwania tokenu:', error);
+          console.error('Błąd podczas sprawdzania tokenu:', error);
         }
       }
       
@@ -66,4 +71,4 @@ export function Providers({ children }: ProvidersProps) {
       {children}
     </SessionProvider>
   );
-} 
+}

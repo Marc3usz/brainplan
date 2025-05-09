@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '../components/Header';
@@ -11,22 +11,62 @@ export default function LoginPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Use simple callback URL, defaulting to root
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const [loginAttempted, setLoginAttempted] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
+  
+  // Pobierz URL do przekierowania po logowaniu, domyślnie dashboard
+  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
 
-  // Only redirect to callback URL if user is authenticated and callback is not the login page itself
+  // Przekieruj zalogowanego użytkownika do callbackUrl
   useEffect(() => {
-    if (isAuthenticated && callbackUrl !== '/login') {
-      router.push(callbackUrl);
+    if (isAuthenticated && !loading && !redirectAttempted) {
+      console.log('LoginPage: User is authenticated, redirecting to', callbackUrl);
+      setRedirectAttempted(true);
+      
+      // Użyj bezpośredniego przekierowania zamiast Next.js router
+      window.location.href = callbackUrl;
     }
-  }, [isAuthenticated, router, callbackUrl]);
+  }, [isAuthenticated, loading, callbackUrl, redirectAttempted]);
+
+  // Stan który pozwoli nam śledzić czy próbowano logowania
+  useEffect(() => {
+    // Po pewnym czasie uznaj, że próbowano logowania
+    const timer = setTimeout(() => {
+      setLoginAttempted(true);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   if (loading) {
     return (
       <>
         <Header />
         <div className="flex min-h-screen items-center justify-center">
-          <Loader size="lg" />
+          <div className="text-center">
+            <Loader size="lg" />
+            <p className="mt-4 text-lg">Loading...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+  
+  if (isAuthenticated) {
+    return (
+      <>
+        <Header />
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <Loader size="lg" />
+            <p className="mt-4 text-lg">Redirecting you...</p>
+            <button 
+              onClick={() => window.location.href = callbackUrl}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Click here if you're not redirected automatically
+            </button>
+          </div>
         </div>
       </>
     );
@@ -63,7 +103,7 @@ export default function LoginPage() {
                   
                   <div className="text-center">
                     <a 
-                      href={`/auth/signin?callbackUrl=${callbackUrl}`}
+                      href={`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`}
                       className="text-indigo-600 hover:text-indigo-500 font-medium"
                     >
                       Use email and password instead
@@ -71,10 +111,22 @@ export default function LoginPage() {
                   </div>
                 </div>
               </div>
+              
+              {/* Informacje pomocnicze dla użytkownika */}
+              {loginAttempted && (
+                <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+                  <p className="font-medium">Masz problem z logowaniem?</p>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Upewnij się, że masz włączone cookies w przeglądarce</li>
+                    <li>Spróbuj wyczyścić pamięć podręczną i cookies</li>
+                    <li>Jeśli korzystasz z blokerów reklam, wyłącz je dla tej strony</li>
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </main>
     </>
   );
-} 
+}

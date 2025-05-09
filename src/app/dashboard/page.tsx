@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/hooks/useAuth';
 import Header from '../components/Header';
-import { useRouter } from 'next/navigation';
 import ProfileImage from '../components/ProfileImage';
 import Loader from '../components/Loader';
 import Calendar from '../components/Calendar';
@@ -11,21 +10,33 @@ import GoogleCalendarAuth from '../components/GoogleCalendarAuth';
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth({ required: true });
-  const router = useRouter();
-
+  const [mounted, setMounted] = useState(false);
   const [calendars, setCalendars] = useState<any[]>([]);
   const [calendarError, setCalendarError] = useState('');
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("accessToken");
-    setAccessToken(token);
+    setMounted(true);
+    console.log('Dashboard: Component mounted, auth state:', { isAuthenticated, loading });
+    return () => setMounted(false);
+  }, []);
 
-    if (token) {
-      fetchCalendars(token);
+  useEffect(() => {
+    if (!mounted || loading) return;
+
+    console.log('Dashboard: Auth status changed:', { isAuthenticated, loading });
+
+    try {
+      const token = sessionStorage.getItem("accessToken");
+      setAccessToken(token);
+
+      if (token) {
+        fetchCalendars(token);
+      }
+    } catch (error) {
+      console.error('Error getting token from sessionStorage:', error);
     }
     
-    // Handle storage changes for when token is updated
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "accessToken") {
         setAccessToken(e.newValue);
@@ -35,11 +46,9 @@ export default function Dashboard() {
       }
     };
     
-    // Use standard event listener instead of polling
     window.addEventListener('storage', handleStorageChange);
-    
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [mounted, isAuthenticated, loading]);
 
   const fetchCalendars = async (token: string) => {
     try {
@@ -71,12 +80,28 @@ export default function Dashboard() {
     setCalendarError(`Błąd logowania: ${error}`);
   };
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <>
         <Header />
         <div className="flex min-h-screen items-center justify-center">
-          <Loader size="lg" />
+          <div className="text-center">
+            <Loader size="lg" />
+            <p className="mt-4 text-lg">Loading your dashboard...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <>
+        <Header />
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <p className="text-xl">Authentication error. Please try logging in again.</p>
+          </div>
         </div>
       </>
     );
@@ -119,7 +144,6 @@ export default function Dashboard() {
                   </ul>
                 </div>
                 
-                {/* Calendar Section */}
                 <div id="calendar" className="sm:col-span-2">
                   {accessToken ? (
                     <>
@@ -164,9 +188,6 @@ export default function Dashboard() {
                   </ul>
                 </div>
               )}
-
-
-
             </div>
           </div>
         </div>

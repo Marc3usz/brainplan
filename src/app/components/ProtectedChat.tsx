@@ -10,12 +10,11 @@ export function ProtectedChat() {
   const { isAuthenticated, loading } = useAuth({ required: true, redirectTo: '/login' });
   const router = useRouter();
   
-  // Redirect is handled by the useAuth hook, but we add this effect for extra security
-  // Check if we're not already on the login page to prevent loops
+  // Przekierowanie jest już obsługiwane przez hook useAuth, ale dodajemy dodatkowe zabezpieczenie
   useEffect(() => {
-    if (!loading && !isAuthenticated && 
-        typeof window !== 'undefined' && 
-        !window.location.pathname.includes('/login')) {
+    // Sprawdź, czy użytkownik nie jest zalogowany i nie jest już na stronie logowania
+    if (!loading && !isAuthenticated) {
+      console.log('ProtectedChat: Użytkownik nie jest zalogowany, przekierowuję na stronę logowania');
       router.push('/login');
     }
   }, [loading, isAuthenticated, router]);
@@ -32,7 +31,13 @@ export function ProtectedChat() {
   }
 
   if (!isAuthenticated) {
-    return null; // Don't render anything while redirecting
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="text-center">
+          <p className="text-white text-xl">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -40,4 +45,4 @@ export function ProtectedChat() {
       <ChatInterface />
     </div>
   );
-} 
+}
