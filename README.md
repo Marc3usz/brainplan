@@ -136,7 +136,15 @@ The tool will be automatically available to the AI assistant. Make sure to:
 ## Additional Information
 
 - **License:** MIT
-- **Author:** Marc3usz
+- **Authors:**
+
+  [Marc3usz](https://github.com/Marc3usz)
+  
+  [S1D0R-10](https://github.com/S1D0R-10)
+
+  [megawonzz9](https://github.com/megawonzz9)
+  
+  [kumykowski](https://github.com/kumykowski)
 
 ---
 
